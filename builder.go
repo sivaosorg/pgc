@@ -108,66 +108,82 @@ func (c *RConf) String(safe bool) string {
 // Setter
 //_______________________________________________________________________
 
-func (c *RConf) SetEnable(value bool) {
+func (c *RConf) SetEnable(value bool) *RConf {
 	c.enabled = value
+	return c
 }
 
-func (c *RConf) SetDebug(value bool) {
+func (c *RConf) SetDebug(value bool) *RConf {
 	c.debugging = value
+	return c
 }
 
-func (c *RConf) SetHost(value string) {
+func (c *RConf) SetHost(value string) *RConf {
 	c.host = value
+	return c
 }
 
-func (c *RConf) SetPort(value int) {
+func (c *RConf) SetPort(value int) *RConf {
 	c.port = value
+	return c
 }
 
-func (c *RConf) SetUser(value string) {
+func (c *RConf) SetUser(value string) *RConf {
 	c.user = value
+	return c
 }
 
-func (c *RConf) SetPassword(value string) {
+func (c *RConf) SetPassword(value string) *RConf {
 	c.password = value
+	return c
 }
 
-func (c *RConf) SetDatabase(value string) {
+func (c *RConf) SetDatabase(value string) *RConf {
 	c.database = value
+	return c
 }
 
-func (c *RConf) SetSslMode(value string) {
+func (c *RConf) SetSslMode(value string) *RConf {
 	c.sslmode = value
+	return c
 }
 
-func (c *RConf) SetSslCert(value string) {
+func (c *RConf) SetSslCert(value string) *RConf {
 	c.sslcert = value
+	return c
 }
 
-func (c *RConf) SetSslKey(value string) {
+func (c *RConf) SetSslKey(value string) *RConf {
 	c.sslkey = value
+	return c
 }
 
-func (c *RConf) SetSslRootCert(value string) {
+func (c *RConf) SetSslRootCert(value string) *RConf {
 	c.sslrootcert = value
+	return c
 }
 
-func (c *RConf) SetConnTimeout(value time.Duration) {
+func (c *RConf) SetConnTimeout(value time.Duration) *RConf {
 	c.connTimeout = value
+	return c
 }
 
-func (c *RConf) SetApplication(value string) {
+func (c *RConf) SetApplication(value string) *RConf {
 	c.application = value
+	return c
 }
 
-func (c *RConf) SetMaxOpenConn(value int) {
+func (c *RConf) SetMaxOpenConn(value int) *RConf {
 	c.maxOpenConn = value
+	return c
 }
 
-func (c *RConf) SetMaxIdleConn(value int) {
+func (c *RConf) SetMaxIdleConn(value int) *RConf {
 	c.maxIdleConn = value
+	return c
 }
 
-func (c *RConf) SetConnMaxLifetime(value time.Duration) {
+func (c *RConf) SetConnMaxLifetime(value time.Duration) *RConf {
 	c.connMaxLifetime = value
+	return c
 }
