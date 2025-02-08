@@ -71,6 +71,35 @@ func NewClient(conf RConf) *Datasource {
 	return datasource
 }
 
+// AllTables retrieves the names of all base tables in the "public" schema of the connected PostgreSQL database.
+//
+// This function first verifies whether the Datasource is currently connected. If not, it returns the current wrap
+// response (which typically contains the connection status or error details).
+//
+// It then executes a SQL query against the information_schema to retrieve the names of all tables where the schema
+// is 'public' and the table type is 'BASE TABLE'. The results are stored in a slice of strings.
+//
+// In case of an error during the query execution, the function wraps the error using wrapify.WrapInternalServerError,
+// attaches any partial results if available, and returns the resulting error response.
+//
+// If the query executes successfully, it wraps the list of table names using wrapify.WrapOk, includes the total count
+// of tables, and returns the successful response.
+//
+// Returns:
+//   - A wrapify.R instance encapsulating either the successful retrieval of table names or the error encountered.
+func (d *Datasource) AllTables() wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var tables []string
+	err := d.conn.Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
+	if err != nil {
+		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
+}
+
 // keepalive initiates a background goroutine that periodically pings the PostgreSQL database
 // to monitor connection health. Upon detecting a failure in the ping, it attempts to reconnect
 // and subsequently invokes a callback (if set) with the updated connection status. This mechanism
