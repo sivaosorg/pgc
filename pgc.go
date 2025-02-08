@@ -10,6 +10,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// NewClient creates and returns a new Datasource configured for PostgreSQL based on the provided RConf.
+// When the configuration is disabled, it returns a Datasource flagged with a service unavailable wrap.
+// Otherwise, it attempts to open a connection using the connection string derived from RConf. It then verifies
+// connectivity by pinging the database within the configured timeout. On a successful ping, it sets up the
+// connection pool with parameters for maximum idle connections, maximum open connections, and connection lifetime.
+// Any failure during these steps results in the Datasource being wrapped with an appropriate error message.
 func NewClient(conf RConf) *Datasource {
 	datasource := &Datasource{
 		conf: conf,
