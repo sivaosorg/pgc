@@ -1,6 +1,9 @@
 package pgc
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Getter
@@ -12,10 +15,6 @@ func (c *RConf) IsEnabled() bool {
 
 func (c *RConf) IsDebugging() bool {
 	return c.debugging
-}
-
-func (c *RConf) Database() string {
-	return c.database
 }
 
 func (c *RConf) Host() string {
@@ -30,8 +29,32 @@ func (c *RConf) User() string {
 	return c.user
 }
 
+func (c *RConf) Database() string {
+	return c.database
+}
+
 func (c *RConf) SSLMode() string {
-	return c.sslMode
+	return c.sslmode
+}
+
+func (c *RConf) SSLCert() string {
+	return c.sslcert
+}
+
+func (c *RConf) SSLKey() string {
+	return c.sslkey
+}
+
+func (c *RConf) SSLRootCert() string {
+	return c.sslrootcert
+}
+
+func (c *RConf) ConnTimeout() time.Duration {
+	return c.connTimeout
+}
+
+func (c *RConf) Application() string {
+	return c.application
 }
 
 func (c *RConf) MaxOpenConn() int {
@@ -42,8 +65,12 @@ func (c *RConf) MaxIdleConn() int {
 	return c.maxIdleConn
 }
 
-func (c *RConf) Timeout() time.Duration {
-	return c.timeout
+func (c *RConf) ConnMaxLifetime() time.Duration {
+	return c.connMaxLifetime
+}
+
+func (c *RConf) IsSSL() bool {
+	return !strings.EqualFold(c.sslmode, "disable")
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -56,10 +83,6 @@ func (c *RConf) SetEnable(value bool) {
 
 func (c *RConf) SetDebug(value bool) {
 	c.debugging = value
-}
-
-func (c *RConf) SetDatabase(value string) {
-	c.database = value
 }
 
 func (c *RConf) SetHost(value string) {
@@ -78,8 +101,32 @@ func (c *RConf) SetPassword(value string) {
 	c.password = value
 }
 
+func (c *RConf) SetDatabase(value string) {
+	c.database = value
+}
+
 func (c *RConf) SetSSLMode(value string) {
-	c.sslMode = value
+	c.sslmode = value
+}
+
+func (c *RConf) SetSSLCert(value string) {
+	c.sslcert = value
+}
+
+func (c *RConf) SetSSLKey(value string) {
+	c.sslkey = value
+}
+
+func (c *RConf) SetSSLRootCert(value string) {
+	c.sslrootcert = value
+}
+
+func (c *RConf) SetConnTimeout(value time.Duration) {
+	c.connTimeout = value
+}
+
+func (c *RConf) SetApplication(value string) {
+	c.application = value
 }
 
 func (c *RConf) SetMaxOpenConn(value int) {
@@ -90,6 +137,6 @@ func (c *RConf) SetMaxIdleConn(value int) {
 	c.maxIdleConn = value
 }
 
-func (c *RConf) SetTimeout(value time.Duration) {
-	c.timeout = value
+func (c *RConf) SetConnMaxLifetime(value time.Duration) {
+	c.connMaxLifetime = value
 }
