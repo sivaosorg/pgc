@@ -87,3 +87,17 @@ type Datasource struct {
 	//  such as when the connection is lost, re-established, or its health is updated.
 	on func(response wrapify.R)
 }
+
+// FuncMetadata represents the metadata for a function parameter retrieved from the PostgreSQL database.
+//
+// Fields:
+//   - DataType:    The data type of the function parameter.
+//   - RoutineName: The name of the function (routine) to which the parameter belongs.
+//   - ParamName:   The name of the parameter.
+//   - ParamMode:   The mode of the parameter (e.g., IN, OUT, INOUT).
+type FuncMetadata struct {
+	DataType    string `db:"data_type" json:"type,omitempty"`
+	RoutineName string `db:"routine_name" json:"routine_name,omitempty"`
+	ParamName   string `db:"parameter_name" json:"param_name,omitempty"`
+	ParamMode   string `db:"parameter_mode" json:"param_mode,omitempty"`
+}
