@@ -25,7 +25,7 @@ func NewClient(conf RConf) *Datasource {
 		conf: conf,
 	}
 	if !conf.IsEnabled() {
-		datasource.SetWrap(wrapify.WrapServiceUnavailable("postgresql service unavailable", nil).Reply())
+		datasource.SetWrap(wrapify.WrapServiceUnavailable("Postgresql service unavailable", nil).Reply())
 		return datasource
 	}
 
@@ -33,7 +33,7 @@ func NewClient(conf RConf) *Datasource {
 	c, err := sqlx.Open("postgres", conf.String(false))
 	if err != nil {
 		datasource.SetWrap(
-			wrapify.WrapInternalServerError("unable to connect to the postgresql database", nil).
+			wrapify.WrapInternalServerError("Unable to connect to the postgresql database", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithErrSck(err).Reply(),
 		)
@@ -46,7 +46,7 @@ func NewClient(conf RConf) *Datasource {
 	err = c.PingContext(ctx)
 	if err != nil {
 		datasource.SetWrap(
-			wrapify.WrapInternalServerError("the postgresql database is unreachable", nil).
+			wrapify.WrapInternalServerError("The postgresql database is unreachable", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithErrSck(err).Reply(),
 		)
@@ -62,7 +62,7 @@ func NewClient(conf RConf) *Datasource {
 	datasource.SetWrap(wrapify.New().
 		WithStatusCode(http.StatusOK).
 		WithDebuggingKV("pgsql_conn_str", conf.String(true)).
-		WithMessagef("successfully connected to the postgresql database: '%s'", conf.ConnString()).Reply())
+		WithMessagef("Successfully connected to the postgresql database: '%s'", conf.ConnString()).Reply())
 
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
@@ -88,14 +88,14 @@ func (d *Datasource) keepalive() {
 		defer ticker.Stop()
 		for range ticker.C {
 			if err := d.ping(); err != nil {
-				pingWrapper := wrapify.WrapInternalServerError("the postgresql database is unreachable, attempting to reconnect...", nil).
+				pingWrapper := wrapify.WrapInternalServerError("The postgresql database is currently unreachable. Initiating reconnection process...", nil).
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 					WithErrSck(err).Reply()
 				d.SetWrap(pingWrapper)
 				d.invoke(pingWrapper)
 
 				if err := d.reconnect(); err != nil {
-					reconnectWrapper := wrapify.WrapInternalServerError("the postgresql database is unreachable, reconnection attempt failed", nil).
+					reconnectWrapper := wrapify.WrapInternalServerError("The postgresql database remains unreachable. The reconnection attempt has failed", nil).
 						WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 						WithErrSck(err).Reply()
 					d.SetWrap(reconnectWrapper)
@@ -104,7 +104,7 @@ func (d *Datasource) keepalive() {
 					successWrapper := wrapify.New().
 						WithStatusCode(http.StatusOK).
 						WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
-						WithMessagef("reconnected to the postgresql database successfully: '%s'", d.conf.ConnString()).Reply()
+						WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
 					d.SetWrap(successWrapper)
 					d.invoke(successWrapper)
 				}
@@ -112,7 +112,7 @@ func (d *Datasource) keepalive() {
 				successWrapper := wrapify.New().
 					WithStatusCode(http.StatusOK).
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
-					WithMessagef("reconnected to the postgresql database successfully: '%s'", d.conf.ConnString()).Reply()
+					WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
 				d.SetWrap(successWrapper)
 				d.invoke(successWrapper)
 			}
@@ -132,7 +132,7 @@ func (d *Datasource) ping() error {
 	conn := d.conn
 	d.mu.RUnlock()
 	if conn == nil {
-		return fmt.Errorf("postgresql connection is unreachable")
+		return fmt.Errorf("the postgresql connection is currently unavailable")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), d.conf.ConnTimeout())
 	defer cancel()
