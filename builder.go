@@ -107,6 +107,12 @@ func (c *RConf) String(safe bool) string {
 	return builder.String()
 }
 
+func (c *RConf) ConnString() string {
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("%s@%s:%d/%s", c.user, c.host, c.port, c.database))
+	return builder.String()
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Getter Datasource
 //_______________________________________________________________________
@@ -121,6 +127,14 @@ func (d *Datasource) Wrap() wrapify.R {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.wrap
+}
+
+func (d *Datasource) Conf() RConf {
+	return d.conf
+}
+
+func (d *Datasource) IsConnected() bool {
+	return d.Wrap().IsSuccess()
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾

@@ -63,6 +63,7 @@ type SslmodeVarious string
 
 type Datasource struct {
 	mu   sync.RWMutex
+	conf RConf
 	wrap wrapify.R
 	conn *sqlx.DB
 }
