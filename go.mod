@@ -7,6 +7,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/sivaosorg/loggy v0.0.1
 	github.com/sivaosorg/wrapify v0.0.3
+	gopkg.in/guregu/null.v3 v3.5.0
 )
 
 require github.com/sivaosorg/unify4g v0.0.2 // indirect

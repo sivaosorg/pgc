@@ -14,3 +14,5 @@ github.com/sivaosorg/unify4g v0.0.2 h1:5UVUHqp4tJnqgiZaFs5iSxdCab5hTB9Jx3HQNMyZZ
 github.com/sivaosorg/unify4g v0.0.2/go.mod h1:rkCukiHwnpNmbu/sO5VCM3OM5wm1dfPDrLqtwbmgLgQ=
 github.com/sivaosorg/wrapify v0.0.3 h1:4Lgg1jKuacMsCFjR7TUmPDftnO+MnKkw4ePkIBPkJIo=
 github.com/sivaosorg/wrapify v0.0.3/go.mod h1:H5yRIhFe4WLTXD5MiDC4H3Sb/ex1BcDrQUiMxz79fL8=
+gopkg.in/guregu/null.v3 v3.5.0 h1:xTcasT8ETfMcUHn0zTvIYtQud/9Mx5dJqD554SZct0o=
+gopkg.in/guregu/null.v3 v3.5.0/go.mod h1:E4tX2Qe3h7QdL+uZ3a0vqvYwKQsRSQKM5V4YltdgH9Y=

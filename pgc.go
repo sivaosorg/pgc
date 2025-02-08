@@ -288,6 +288,126 @@ func (d *Datasource) GetProcedureBrief(procedure string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), content).WithTotal(1).Reply()
 }
 
+// GetTableBrief retrieves metadata information for the specified table from the connected PostgreSQL database.
+//
+// This function constructs and executes a SQL query that gathers various types of metadata for the given table,
+// including primary key constraints, unique key constraints, and index definitions. It does so by performing a
+// UNION of three queries:
+//  1. The first query retrieves the name of the primary key constraint (labeled as "Primary Key") from the pg_constraint table.
+//  2. The second query retrieves the name of any unique key constraint (labeled as "Unique Key") from the pg_constraint table.
+//  3. The third query retrieves index information (labeled as "Index") from the pg_indexes view, including the index definition.
+//
+// The query uses PostgreSQL's regclass type conversion to reference the table by name and filters for constraints
+// and indexes that belong to the 'public' schema. The results are then scanned into a slice of TableMetadata structures.
+//
+// If the Datasource is not connected, the function immediately returns the existing wrap response which indicates the
+// connection status. If an error occurs during query execution or while scanning the result rows, the error is wrapped
+// using wrapify.WrapInternalServerError and the error response is returned. Upon successful execution, the function returns
+// a successful wrapify.R response containing the list of metadata records along with the total count of records retrieved.
+//
+// Parameters:
+//   - table: The name of the table for which metadata is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance encapsulating either the retrieved metadata (on success) or an error message (on failure).
+func (d *Datasource) GetTableBrief(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	s := `
+		SELECT conname AS c_name, 'Primary Key' AS type, '' as descriptor
+		FROM pg_constraint
+		WHERE conrelid = regclass($1)
+		AND confrelid = 0
+		AND contype = 'p'
+		UNION
+		SELECT conname AS c_name, 'Unique Key' AS type, '' as descriptor
+		FROM pg_constraint
+		WHERE conrelid = regclass($1)
+		AND confrelid = 0
+		AND contype = 'u'
+		UNION
+		SELECT indexname AS c_name, 'Index' AS type, indexdef as descriptor
+		FROM pg_indexes
+		WHERE tablename = $1;
+	`
+	rows, err := d.conn.Query(s, table)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the table '%s' metadata", table), nil).WithErrSck(err)
+		return response.Reply()
+	}
+	defer rows.Close()
+	var results []TableMetadata
+	for rows.Next() {
+		var m TableMetadata
+		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
+			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
+			return response.Reply()
+		}
+		results = append(results, m)
+	}
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' metadata successfully", table), results).WithTotal(len(results)).Reply()
+}
+
+// GetColumnsBrief retrieves metadata for all columns of the specified table from the PostgreSQL database.
+//
+// This function queries the information_schema.columns view to collect details about each column in the
+// specified table. The retrieved metadata includes the column name, data type, and the maximum character
+// length (if applicable). The SQL query filters the columns based on the provided table name.
+//
+// Initially, the function verifies that the Datasource is connected; if not, it returns the existing wrap
+// response which indicates the connection status. It then executes the query and iterates over the result rows,
+// scanning each row into a ColumnMetadata structure. If an error occurs during query execution or while scanning
+// the rows, the error is wrapped using wrapify.WrapInternalServerError and an error response is returned.
+// On successful execution, the function wraps the resulting slice of column metadata using wrapify.WrapOk,
+// attaches the total number of columns retrieved, and returns the successful response.
+//
+// Parameters:
+//   - table: The name of the table for which to retrieve column metadata.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the retrieved column metadata or an error message,
+//     along with additional metadata (e.g., the total count of columns).
+func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	s := `
+		SELECT
+			column_name,
+			data_type,
+			character_maximum_length
+		FROM
+			information_schema.columns
+		WHERE
+			table_name = $1;
+	`
+	rows, err := d.conn.Query(s, table)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
+		return response.Reply()
+	}
+	defer rows.Close()
+	var results []ColumnMetadata
+	for rows.Next() {
+		var m ColumnMetadata
+		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
+			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
+			return response.Reply()
+		}
+		results = append(results, m)
+	}
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
+}
+
 // keepalive initiates a background goroutine that periodically pings the PostgreSQL database
 // to monitor connection health. Upon detecting a failure in the ping, it attempts to reconnect
 // and subsequently invokes a callback (if set) with the updated connection status. This mechanism

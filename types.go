@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sivaosorg/wrapify"
+	"gopkg.in/guregu/null.v3"
 )
 
 type WConf struct {
@@ -100,4 +101,28 @@ type FuncMetadata struct {
 	RoutineName string `db:"routine_name" json:"routine_name,omitempty"`
 	ParamName   string `db:"parameter_name" json:"param_name,omitempty"`
 	ParamMode   string `db:"parameter_mode" json:"param_mode,omitempty"`
+}
+
+// TableMetadata represents a single metadata record for a table in the PostgreSQL database.
+//
+// Fields:
+//   - Name: The name of the constraint or index.
+//   - Type: The type of metadata (e.g., "Primary Key", "Unique Key", or "Index").
+//   - Desc: Additional details, such as the index definition, if applicable.
+type TableMetadata struct {
+	Name string `json:"name,omitempty" db:"c_name"`
+	Type string `json:"type,omitempty" db:"type"`
+	Desc string `json:"desc,omitempty" db:"descriptor"`
+}
+
+// ColumnMetadata represents metadata information for a column in a PostgreSQL table.
+//
+// Fields:
+//   - Column:    The name of the column.
+//   - Type:      The data type of the column.
+//   - MaxLength: The maximum character length allowed for the column (if applicable).
+type ColumnMetadata struct {
+	Column    string   `json:"column" db:"column_name"`
+	Type      string   `json:"type" db:"data_type"`
+	MaxLength null.Int `json:"max_length" db:"character_maximum_length"`
 }
