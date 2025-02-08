@@ -1,6 +1,7 @@
 package pgc
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -33,19 +34,19 @@ func (c *RConf) Database() string {
 	return c.database
 }
 
-func (c *RConf) SSLMode() string {
+func (c *RConf) SslMode() string {
 	return c.sslmode
 }
 
-func (c *RConf) SSLCert() string {
+func (c *RConf) SslCert() string {
 	return c.sslcert
 }
 
-func (c *RConf) SSLKey() string {
+func (c *RConf) SslKey() string {
 	return c.sslkey
 }
 
-func (c *RConf) SSLRootCert() string {
+func (c *RConf) SslRootCert() string {
 	return c.sslrootcert
 }
 
@@ -69,8 +70,38 @@ func (c *RConf) ConnMaxLifetime() time.Duration {
 	return c.connMaxLifetime
 }
 
-func (c *RConf) IsSSL() bool {
+func (c *RConf) IsSsl() bool {
 	return !strings.EqualFold(c.sslmode, "disable")
+}
+
+func (c *RConf) IsConnTimeout() bool {
+	return c.connTimeout != 0
+}
+
+func (c *RConf) String(safe bool) string {
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("host=%s ", c.host))
+	builder.WriteString(fmt.Sprintf("port=%d ", c.port))
+	builder.WriteString(fmt.Sprintf("user=%s ", c.user))
+	if safe {
+		builder.WriteString(fmt.Sprintf("password=%s ", "******"))
+	} else {
+		builder.WriteString(fmt.Sprintf("password=%s ", c.password))
+	}
+	builder.WriteString(fmt.Sprintf("dbname=%s ", c.database))
+	builder.WriteString(fmt.Sprintf("sslmode=%s ", c.sslmode))
+	if isNotEmpty(c.application) {
+		builder.WriteString(fmt.Sprintf("application_name=%s ", c.application))
+	}
+	if c.IsConnTimeout() {
+		builder.WriteString(fmt.Sprintf("connect_timeout=%d ", c.connTimeout))
+	}
+	if c.IsSsl() {
+		builder.WriteString(fmt.Sprintf("sslcert=%s ", c.sslcert))
+		builder.WriteString(fmt.Sprintf("sslkey=%s ", c.sslkey))
+		builder.WriteString(fmt.Sprintf("sslrootcert=%s ", c.sslrootcert))
+	}
+	return builder.String()
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -105,19 +136,19 @@ func (c *RConf) SetDatabase(value string) {
 	c.database = value
 }
 
-func (c *RConf) SetSSLMode(value string) {
+func (c *RConf) SetSslMode(value string) {
 	c.sslmode = value
 }
 
-func (c *RConf) SetSSLCert(value string) {
+func (c *RConf) SetSslCert(value string) {
 	c.sslcert = value
 }
 
-func (c *RConf) SetSSLKey(value string) {
+func (c *RConf) SetSslKey(value string) {
 	c.sslkey = value
 }
 
-func (c *RConf) SetSSLRootCert(value string) {
+func (c *RConf) SetSslRootCert(value string) {
 	c.sslrootcert = value
 }
 
