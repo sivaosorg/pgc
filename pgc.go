@@ -215,6 +215,79 @@ func (d *Datasource) GetFuncMetadata(function string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), segments).WithTotal(len(segments)).Reply()
 }
 
+// GetFuncBrief retrieves the complete definition of a specified PostgreSQL function.
+//
+// This function uses the PostgreSQL built-in function pg_get_functiondef to obtain the
+// full SQL definition of the function identified by the provided name. It queries the database
+// for the function's definition and scans the resulting output into a string.
+//
+// The function first checks if the Datasource is connected. If the connection is not active,
+// it returns the current wrap response that contains the connection status or error details.
+//
+// In the event of an error during the query execution, such as if the function cannot be found or
+// another database error occurs, the error is wrapped using wrapify.WrapInternalServerError, along with
+// the partial content (if any), and the resulting error response is returned.
+//
+// If the query succeeds, the function wraps the retrieved function definition in a successful response,
+// sets the total count to 1 (since a single definition is returned), and then returns this response.
+//
+// Parameters:
+//   - function: The name of the PostgreSQL function whose definition is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the function's complete definition or an error message,
+//     along with additional metadata.
+func (d *Datasource) GetFuncBrief(function string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var content string
+	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&content)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), content).WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), content).WithTotal(1).Reply()
+}
+
+// GetProcedureBrief retrieves the complete definition of a specified PostgreSQL procedure.
+//
+// This method leverages the PostgreSQL built-in function pg_get_functiondef to obtain the SQL definition
+// of the procedure identified by the given name. Although pg_get_functiondef is primarily used for functions,
+// it can also be used to retrieve definitions of procedures registered in the system catalog.
+//
+// The function first checks whether the Datasource is currently connected. If the connection is not active,
+// it immediately returns the existing wrap response containing the connection status or error details.
+//
+// It then executes a SQL query that calls pg_get_functiondef, passing the procedure's identifier (cast as regproc)
+// to retrieve its definition. The resulting definition is scanned into a string variable named content.
+//
+// If an error occurs during query execution (e.g., if the procedure does not exist or a database error occurs),
+// the error is wrapped using wrapify.WrapInternalServerError, along with any partial content, and the resulting
+// error response is returned.
+//
+// On success, the function wraps the retrieved procedure definition in a successful response, sets the total
+// count to 1 (since a single definition is returned), and then returns this response.
+//
+// Parameters:
+//   - procedure: The name of the PostgreSQL procedure whose definition is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the procedure's complete definition or an error message,
+//     along with additional metadata such as the total count (1 in this case).
+func (d *Datasource) GetProcedureBrief(procedure string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var content string
+	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&content)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), content).WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), content).WithTotal(1).Reply()
+}
+
 // keepalive initiates a background goroutine that periodically pings the PostgreSQL database
 // to monitor connection health. Upon detecting a failure in the ping, it attempts to reconnect
 // and subsequently invokes a callback (if set) with the updated connection status. This mechanism
