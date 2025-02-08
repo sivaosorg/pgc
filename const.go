@@ -1,5 +1,7 @@
 package pgc
 
+import "time"
+
 const (
 	// SslmodeDisable disables SSL.
 	// In this mode, SSL is not used at all, and the connection is established in plain text.
@@ -19,3 +21,6 @@ const (
 	// and the host name in the certificate is also validated against the server's host name.
 	SslmodeVerifyFull SslmodeVarious = "verify-full"
 )
+
+// defaultPingInterval defines the frequency at which the connection is pinged.
+const defaultPingInterval = 30 * time.Second
