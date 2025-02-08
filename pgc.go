@@ -408,6 +408,268 @@ func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
 }
 
+// GetTableDDL generates the Data Definition Language (DDL) statement for creating the specified table
+// in the connected PostgreSQL database.
+//
+// This function constructs a DDL statement by querying the system catalog tables. It retrieves the table's name
+// and column information from pg_class, pg_namespace, and pg_attribute. The resulting query concatenates the
+// column definitions—including data types and NOT NULL constraints—into a formatted CREATE TABLE statement.
+//
+// The function first checks whether the Datasource is connected. If not, it returns the existing wrap response,
+// which includes connection status or error details. If the connection is active, it executes the query with the
+// specified table name, scans the generated DDL into a string variable, and handles any errors encountered during
+// query execution or scanning by wrapping them in a detailed error response.
+//
+// Upon success, the function returns a successful wrap response containing the generated DDL statement and the total
+// count (which is 1, as only one DDL statement is generated).
+//
+// Parameters:
+//   - table: The name of the table for which the DDL creation statement is to be generated.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the generated DDL statement (on success) or an error message
+//     (on failure), along with additional metadata.
+func (d *Datasource) GetTableDDL(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var ddl string
+	query := `
+		SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+			array_to_string(
+				array_agg(
+					'    ' || quote_ident(a.attname) || ' ' ||
+					pg_catalog.format_type(a.atttypid, a.atttypmod) ||
+					CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+				), E',\n'
+			) || E'\n);\n' AS ddl
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE c.relname = $1
+			AND n.nspname = 'public'
+			AND a.attnum > 0
+		GROUP BY c.relname;
+	`
+	err := d.conn.QueryRow(query, table).Scan(&ddl)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), ddl).
+			WithErrSck(err)
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("DDL for table '%s' generated successfully", table), ddl).
+		WithTotal(1).
+		Reply()
+}
+
+// GetTableFullDDL generates a comprehensive Data Definition Language (DDL) script for the specified table,
+// including its creation statement as well as its relationships (foreign key constraints), other constraints,
+// and indexes.
+//
+// This function performs multiple queries to construct the full DDL:
+//  1. It first retrieves the standard CREATE TABLE statement by querying the PostgreSQL system catalogs.
+//  2. It then retrieves any foreign key constraints defined on the table by querying the information_schema,
+//     and constructs ALTER TABLE statements for these relationships.
+//  3. It also retrieves the definitions of all indexes associated with the table from the pg_indexes view.
+//
+// The function first verifies that the Datasource is connected. If not, it returns the current wrap response.
+// If connected, it sequentially executes the queries to obtain the table DDL, foreign key constraints DDL, and indexes DDL.
+// In the event of any errors during the retrieval of the table DDL, an error response is returned immediately.
+// For foreign keys and indexes, if no definitions exist or an error occurs, those sections are simply omitted.
+// Finally, the function concatenates all retrieved parts into a single DDL script and returns it in a successful response.
+//
+// Parameters:
+//   - table: The name of the table for which the full DDL is to be generated.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates the complete DDL script for the table (on success) or an error message
+//     (on failure), along with additional metadata (e.g., a total count of 1).
+func (d *Datasource) GetTableFullDDL(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	// Retrieve the basic CREATE TABLE DDL from the system catalogs.
+	var tableDDL string
+	// ddlQuery := `
+	// 	SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+	// 		array_to_string(
+	// 			array_agg(
+	// 				'    ' || quote_ident(a.attname) || ' ' ||
+	// 				pg_catalog.format_type(a.atttypid, a.atttypmod) ||
+	// 				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+	// 			), E',\n'
+	// 		) || E'\n);\n' AS ddl
+	// 	FROM pg_class c
+	// 	JOIN pg_namespace n ON n.oid = c.relnamespace
+	// 	JOIN pg_attribute a ON a.attrelid = c.oid
+	// 	WHERE c.relname = $1
+	// 		AND n.nspname = 'public'
+	// 		AND a.attnum > 0
+	// 	GROUP BY c.relname;
+	// `
+
+	// ddlQuery := `
+	// 	SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+	// 		array_to_string(
+	// 			array_agg(
+	// 				'    ' || quote_ident(a.attname) || ' ' ||
+	// 				UPPER(pg_catalog.format_type(a.atttypid, a.atttypmod)) ||
+	// 				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+	// 			), E',\n'
+	// 		) || E'\n);\n' AS ddl
+	// 	FROM pg_class c
+	// 	JOIN pg_namespace n ON n.oid = c.relnamespace
+	// 	JOIN pg_attribute a ON a.attrelid = c.oid
+	// 	WHERE c.relname = $1
+	// 		AND n.nspname = 'public'
+	// 		AND a.attnum > 0
+	// 	GROUP BY c.relname;
+	// `
+
+	// ddlQuery := `
+	// 	SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+	// 		array_to_string(
+	// 			array_agg(
+	// 				'    ' || quote_ident(a.attname) || ' ' ||
+	// 				(
+	// 					CASE
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'integer' THEN 'INT4'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'bigint' THEN 'INT8'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'smallint' THEN 'INT16'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'real' THEN 'FLOAT32'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'double precision' THEN 'FLOAT64'
+	// 						ELSE UPPER(pg_catalog.format_type(a.atttypid, a.atttypmod))
+	// 					END
+	// 				) ||
+	// 				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+	// 			), E',\n'
+	// 		) || E'\n);\n' AS ddl
+	// 	FROM pg_class c
+	// 	JOIN pg_namespace n ON n.oid = c.relnamespace
+	// 	JOIN pg_attribute a ON a.attrelid = c.oid
+	// 	WHERE c.relname = $1
+	// 		AND n.nspname = 'public'
+	// 		AND a.attnum > 0
+	// 	GROUP BY c.relname;
+	// `
+
+	// ddlQuery := `
+	// 	SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+	// 		array_to_string(
+	// 			array_agg(
+	// 				'    ' || quote_ident(a.attname) || ' ' ||
+	// 				(
+	// 					CASE
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'integer' THEN 'INT4'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'bigint' THEN 'INT8'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'smallint' THEN 'INT16'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'real' THEN 'FLOAT32'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'double precision' THEN 'FLOAT64'
+	// 						WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) ILIKE 'character varying%' THEN 'VARCHAR'
+	// 						ELSE UPPER(pg_catalog.format_type(a.atttypid, a.atttypmod))
+	// 					END
+	// 				) ||
+	// 				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+	// 			), E',\n'
+	// 		) || E'\n);\n' AS ddl
+	// 	FROM pg_class c
+	// 	JOIN pg_namespace n ON n.oid = c.relnamespace
+	// 	JOIN pg_attribute a ON a.attrelid = c.oid
+	// 	WHERE c.relname = $1
+	// 		AND n.nspname = 'public'
+	// 		AND a.attnum > 0
+	// 	GROUP BY c.relname;
+	// `
+
+	ddlQuery := `
+		SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+			array_to_string(
+				array_agg(
+					'    ' || quote_ident(a.attname) || ' ' ||
+					(
+						CASE 
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'integer' THEN 'INT4'
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'bigint' THEN 'INT8'
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'smallint' THEN 'INT16'
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'real' THEN 'FLOAT32'
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'double precision' THEN 'FLOAT64'
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) ILIKE 'character varying%' THEN 
+								'VARCHAR' || CASE 
+									WHEN a.atttypmod > 0 THEN '(' || (a.atttypmod - 4)::text || ')'
+									ELSE ''
+								END
+							ELSE UPPER(pg_catalog.format_type(a.atttypid, a.atttypmod))
+						END
+					) ||
+					CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+				), E',\n'
+			) || E'\n);\n' AS ddl
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE c.relname = $1
+			AND n.nspname = 'public'
+			AND a.attnum > 0
+		GROUP BY c.relname;
+	`
+
+	err := d.conn.QueryRow(ddlQuery, table).Scan(&tableDDL)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), tableDDL).
+			WithErrSck(err)
+		return response.Reply()
+	}
+
+	// Retrieve foreign key constraints DDL.
+	// This query constructs ALTER TABLE statements for each foreign key constraint defined on the table.
+	var fkDDL string
+	fkQuery := `
+		SELECT COALESCE(string_agg(fk_statement, E';\n'), '') as fk_ddl
+		FROM (
+			SELECT 'ALTER TABLE ' || quote_ident(tc.table_name) ||
+				' ADD CONSTRAINT ' || quote_ident(tc.constraint_name) ||
+				' FOREIGN KEY (' || string_agg(quote_ident(kcu.column_name), ', ') || ')' ||
+				' REFERENCES ' || quote_ident(ccu.table_name) ||
+				' (' || string_agg(quote_ident(ccu.column_name), ', ') || ')' AS fk_statement
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+			JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
+			WHERE tc.constraint_type = 'FOREIGN KEY'
+				AND tc.table_name = $1
+			GROUP BY tc.table_name, tc.constraint_name, ccu.table_name
+		) sub;
+	`
+	err = d.conn.QueryRow(fkQuery, table).Scan(&fkDDL)
+	if err != nil {
+		// If an error occurs (e.g. no foreign key constraints exist), default to an empty string.
+		fkDDL = ""
+	}
+	// Retrieve indexes DDL.
+	// This query aggregates the index definitions into a single string.
+	var indexes string
+	indexQuery := `
+		SELECT COALESCE(string_agg(indexdef, E';\n'), '') as indexes
+		FROM pg_indexes
+		WHERE tablename = $1;
+	`
+	err = d.conn.QueryRow(indexQuery, table).Scan(&indexes)
+	if err != nil {
+		// If an error occurs (e.g. no indexes exist), default to an empty string.
+		indexes = ""
+	}
+	// Concatenate the various parts of the DDL into one comprehensive script.
+	fullDDL := tableDDL
+	if isNotEmpty(fkDDL) {
+		fullDDL += "\n\n-- Foreign Key Constraints\n" + fkDDL
+	}
+	if isNotEmpty(indexes) {
+		fullDDL += "\n\n-- Indexes\n" + indexes
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Generated full DDL for table '%s' including relationships, constraints, and indexes", table), fullDDL).
+		WithTotal(1).
+		Reply()
+}
+
 // keepalive initiates a background goroutine that periodically pings the PostgreSQL database
 // to monitor connection health. Upon detecting a failure in the ping, it attempts to reconnect
 // and subsequently invokes a callback (if set) with the updated connection status. This mechanism
