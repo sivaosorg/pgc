@@ -52,4 +52,5 @@ type RConf struct {
 	connMaxLifetime time.Duration
 }
 
+// SslmodeVarious represents the SSL mode used for connecting to the database.
 type SslmodeVarious string
