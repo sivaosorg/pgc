@@ -51,3 +51,5 @@ type RConf struct {
 	// The maximum amount of time a connection may be reused.
 	connMaxLifetime time.Duration
 }
+
+type SslmodeVarious string

@@ -148,6 +148,11 @@ func (c *RConf) SetSslMode(value string) *RConf {
 	return c
 }
 
+func (c *RConf) SetSslModeVarious(value SslmodeVarious) *RConf {
+	c.sslmode = string(value)
+	return c
+}
+
 func (c *RConf) SetSslCert(value string) *RConf {
 	c.sslcert = value
 	return c
