@@ -1,6 +1,12 @@
 package pgc
 
-import "time"
+import (
+	"sync"
+	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/sivaosorg/wrapify"
+)
 
 type WConf struct {
 }
@@ -54,3 +60,9 @@ type RConf struct {
 
 // SslmodeVarious represents the SSL mode used for connecting to the database.
 type SslmodeVarious string
+
+type Datasource struct {
+	mu   sync.RWMutex
+	wrap wrapify.R
+	conn *sqlx.DB
+}

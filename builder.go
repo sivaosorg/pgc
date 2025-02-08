@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/sivaosorg/wrapify"
 )
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// Getter
+// Getter RConf
 //_______________________________________________________________________
 
 func (c *RConf) IsEnabled() bool {
@@ -105,7 +108,23 @@ func (c *RConf) String(safe bool) string {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// Setter
+// Getter Datasource
+//_______________________________________________________________________
+
+func (d *Datasource) Conn() *sqlx.DB {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.conn
+}
+
+func (d *Datasource) Wrap() wrapify.R {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.wrap
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Setter RConf
 //_______________________________________________________________________
 
 func (c *RConf) SetEnable(value bool) *RConf {
@@ -191,4 +210,22 @@ func (c *RConf) SetMaxIdleConn(value int) *RConf {
 func (c *RConf) SetConnMaxLifetime(value time.Duration) *RConf {
 	c.connMaxLifetime = value
 	return c
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Setter Datasource
+//_______________________________________________________________________
+
+func (d *Datasource) SetConn(value *sqlx.DB) *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.conn = value
+	return d
+}
+
+func (d *Datasource) SetWrap(value wrapify.R) *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.wrap = value
+	return d
 }
