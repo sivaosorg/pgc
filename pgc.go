@@ -112,7 +112,7 @@ func (d *Datasource) keepalive() {
 				successWrapper := wrapify.New().
 					WithStatusCode(http.StatusOK).
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
-					WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
+					WithMessagef("The connection to the postgresql database has been successfully established: '%s'", d.conf.ConnString()).Reply()
 				d.SetWrap(successWrapper)
 				d.invoke(successWrapper)
 			}
