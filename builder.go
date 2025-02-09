@@ -114,6 +114,9 @@ func (c *RConf) IsPingInterval() bool {
 // ConnString returns a concise connection string in the format: "user@host:port/database".
 // This is mainly used for display or logging purposes.
 func (c *RConf) ConnString() string {
+	if isNotEmpty(c.connectionStrings) {
+		return c.connectionStrings
+	}
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("%s@%s:%d/%s", c.user, c.host, c.port, c.database))
 	return builder.String()
