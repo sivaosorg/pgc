@@ -122,6 +122,9 @@ func (c *RConf) ConnString() string {
 // String returns the full PostgreSQL connection string with all parameters.
 // If safe is true, the password is masked to protect sensitive information.
 func (c *RConf) String(safe bool) string {
+	if isNotEmpty(c.connectionStrings) {
+		return c.connectionStrings
+	}
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("host=%s ", c.host))
 	builder.WriteString(fmt.Sprintf("port=%d ", c.port))
@@ -300,6 +303,18 @@ func (c *RConf) SetPingInterval(value time.Duration) *RConf {
 // SetKeepalive enables or disables the automatic keepalive mechanism and returns the updated RConf.
 func (c *RConf) SetKeepalive(value bool) *RConf {
 	c.keepalive = value
+	return c
+}
+
+// SetConnectionStrings updates the connectionStrings field in the RConf structure with the specified value.
+// This field stores the complete connection string that aggregates all necessary configuration parameters
+// (e.g., host, port, user, password, database, SSL settings, etc.) into a single formatted string recognized
+// by the PostgreSQL driver.
+//
+// Returns:
+//   - A pointer to the updated RConf instance to allow method chaining.
+func (c *RConf) SetConnectionStrings(value string) *RConf {
+	c.connectionStrings = value
 	return c
 }
 

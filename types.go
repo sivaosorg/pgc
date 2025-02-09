@@ -67,6 +67,12 @@ type RConf struct {
 	// When set to true, a background process will periodically ping the database and attempt
 	// to reconnect if the connection is lost.
 	keepalive bool
+
+	// connectionStrings holds the generated connection string used to establish a connection
+	// to the PostgreSQL database. This string typically combines all the configuration parameters
+	// (such as host, port, user, password, database, SSL settings, etc.) into a formatted string
+	// that is recognized by the PostgreSQL driver.
+	connectionStrings string
 }
 
 // SslmodeVarious represents the SSL mode used for connecting to the database.
