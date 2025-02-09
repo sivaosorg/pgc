@@ -73,6 +73,18 @@ type RConf struct {
 	// (such as host, port, user, password, database, SSL settings, etc.) into a formatted string
 	// that is recognized by the PostgreSQL driver.
 	connectionStrings string
+
+	// schema specifies the PostgreSQL schema to use by default for this connection.
+	// When the connection is established, this schema is typically set in the search_path,
+	// so that any unqualified table references will resolve to tables within this schema
+	// rather than the default "public" schema.
+	schema string
+
+	// optional indicates whether the database connection is considered optional.
+	// When set to true, the application may tolerate the absence of a database connection
+	// (for example, proceeding without performing database-dependent operations),
+	// whereas a value of false implies that a successful connection is mandatory.
+	optional bool
 }
 
 // SslmodeVarious represents the SSL mode used for connecting to the database.

@@ -156,6 +156,17 @@ func (c *RConf) String(safe bool) string {
 			builder.WriteString(fmt.Sprintf("sslrootcert=%s ", c.sslrootcert))
 		}
 	}
+	if c.optional {
+		var subs strings.Builder
+		if isNotEmpty(c.schema) {
+			subs.WriteString(fmt.Sprintf("search_path=%s ", c.schema))
+		}
+		// adding new configuration options.
+		// final options
+		if isNotEmpty(subs.String()) {
+			builder.WriteString(fmt.Sprintf("options='-c %s'", subs.String()))
+		}
+	}
 	return builder.String()
 }
 
@@ -318,6 +329,32 @@ func (c *RConf) SetKeepalive(value bool) *RConf {
 //   - A pointer to the updated RConf instance to allow method chaining.
 func (c *RConf) SetConnectionStrings(value string) *RConf {
 	c.connectionStrings = value
+	return c
+}
+
+// SetSchema updates the schema field in the RConf structure with the specified value.
+// This field determines the PostgreSQL schema to be used by default when connecting to the database.
+// By setting the schema, you can direct the connection to use a non-default schema (other than "public")
+// for unqualified table references. This is especially useful when your database objects are organized
+// under a specific schema and you want to avoid prefixing table names with the schema in your SQL queries.
+//
+// Returns:
+//   - A pointer to the updated RConf instance to allow method chaining.
+func (c *RConf) SetSchema(value string) *RConf {
+	c.schema = value
+	return c
+}
+
+// SetOptions updates the optional field in the RConf structure with the specified value.
+// This field determines whether the database connection is considered optional.
+// When set to true, the application may tolerate the absence of a database connection,
+// allowing it to continue operating even if database-dependent operations are skipped.
+// Conversely, a false value implies that a successful connection is mandatory for proper operation.
+//
+// Returns:
+//   - A pointer to the updated RConf instance to allow method chaining.
+func (c *RConf) SetOptions(value bool) *RConf {
+	c.optional = value
 	return c
 }
 
