@@ -140,9 +140,15 @@ func (c *RConf) String(safe bool) string {
 		builder.WriteString(fmt.Sprintf("connect_timeout=%d ", c.connTimeout))
 	}
 	if c.IsSsl() {
-		builder.WriteString(fmt.Sprintf("sslcert=%s ", c.sslcert))
-		builder.WriteString(fmt.Sprintf("sslkey=%s ", c.sslkey))
-		builder.WriteString(fmt.Sprintf("sslrootcert=%s ", c.sslrootcert))
+		if isNotEmpty(c.sslcert) {
+			builder.WriteString(fmt.Sprintf("sslcert=%s ", c.sslcert))
+		}
+		if isNotEmpty(c.sslkey) {
+			builder.WriteString(fmt.Sprintf("sslkey=%s ", c.sslkey))
+		}
+		if isNotEmpty(c.sslrootcert) {
+			builder.WriteString(fmt.Sprintf("sslrootcert=%s ", c.sslrootcert))
+		}
 	}
 	return builder.String()
 }
