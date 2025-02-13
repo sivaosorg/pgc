@@ -10,6 +10,24 @@ import (
 )
 
 type WConf struct {
+	IsEnabled         bool          `yaml:"enabled"`            // Enables or disables the Postgres connection.
+	IsDebugging       bool          `yaml:"debugging"`          // Turns on/off debugging mode for more verbose logging.
+	Host              string        `yaml:"host"`               // Hostname or IP address of the Postgres server.
+	Port              int           `yaml:"port"`               // Port number on which the Postgres server listens.
+	User              string        `yaml:"user"`               // Username used to authenticate with the Postgres server.
+	Password          string        `yaml:"password"`           // Password corresponding to the specified user.
+	Database          string        `yaml:"database"`           // Name of the database to connect to.
+	SslMode           string        `yaml:"ssl_mode"`           // SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+	ConnTimeout       time.Duration `yaml:"conn_timeout"`       // Duration to wait before timing out a connection attempt (e.g., "30s", "1m").
+	Application       string        `yaml:"application"`        // Name of the application connecting to the database (useful for logging or monitoring).
+	MaxOpenConn       int           `yaml:"max_open_conn"`      // Maximum number of open connections allowed in the connection pool.
+	MaxIdleConn       int           `yaml:"max_idle_conn"`      // Maximum number of idle connections maintained in the pool.
+	ConnMaxLifetime   time.Duration `yaml:"conn_max_lifetime"`  // Maximum lifetime of a connection before it is recycled (e.g., "1h", "30m").
+	PingInterval      time.Duration `yaml:"ping_interval"`      // Interval between health-check pings to the database.
+	KeepAlive         bool          `yaml:"keep_alive"`         // Enables TCP keepalive to maintain persistent connections.
+	ConnectionStrings string        `yaml:"connection_strings"` // Full connection string example; alternative to specifying individual connection parameters.
+	Optional          bool          `yaml:"optional"`           // Set to true if the connection is optional (won't cause the application to fail if unavailable).
+	Schema            string        `yaml:"schema"`             // Default database schema to use.
 }
 
 type RConf struct {

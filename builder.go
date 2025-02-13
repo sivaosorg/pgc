@@ -388,3 +388,36 @@ func (d *Datasource) SetOn(fnc func(response wrapify.R)) *Datasource {
 	d.on = fnc
 	return d
 }
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Bind Configs
+//_______________________________________________________________________
+
+// Bind converts a WConf (wrapper configuration loaded from YAML)
+// into an RConf (runtime configuration) instance by mapping each field.
+func Bind(c *WConf) *RConf {
+	if c == nil {
+		return &RConf{}
+	}
+	conf := &RConf{}
+	conf.
+		SetEnable(c.IsEnabled).
+		SetDebug(c.IsDebugging).
+		SetHost(c.Host).
+		SetPort(c.Port).
+		SetUser(c.User).
+		SetPassword(c.Password).
+		SetDatabase(c.Database).
+		SetSslMode(c.SslMode).
+		SetConnTimeout(c.ConnTimeout).
+		SetApplication(c.Application).
+		SetMaxOpenConn(c.MaxOpenConn).
+		SetMaxIdleConn(c.MaxIdleConn).
+		SetConnMaxLifetime(c.ConnMaxLifetime).
+		SetPingInterval(c.PingInterval).
+		SetKeepalive(c.KeepAlive).
+		SetConnectionStrings(c.ConnectionStrings).
+		SetOptions(c.Optional).
+		SetSchema(c.Schema)
+	return conf
+}
