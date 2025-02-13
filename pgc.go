@@ -853,6 +853,7 @@ func (d *Datasource) keepalive() {
 					WithErrSck(err).Reply()
 				d.SetWrap(pingWrapper)
 				d.invoke(pingWrapper)
+				d.invokeReplica(pingWrapper, d)
 
 				ps = time.Now()
 				if err := d.reconnect(); err != nil {
@@ -863,6 +864,7 @@ func (d *Datasource) keepalive() {
 						WithErrSck(err).Reply()
 					d.SetWrap(reconnectWrapper)
 					d.invoke(reconnectWrapper)
+					d.invokeReplica(reconnectWrapper, d)
 				} else {
 					successWrapper := wrapify.New().
 						WithStatusCode(http.StatusOK).
@@ -872,6 +874,7 @@ func (d *Datasource) keepalive() {
 						WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
 					d.SetWrap(successWrapper)
 					d.invoke(successWrapper)
+					d.invokeReplica(successWrapper, d)
 				}
 			} else {
 				successWrapper := wrapify.New().
@@ -882,6 +885,7 @@ func (d *Datasource) keepalive() {
 					WithMessagef("The connection to the postgresql database has been successfully established: '%s'", d.conf.ConnString()).Reply()
 				d.SetWrap(successWrapper)
 				d.invoke(successWrapper)
+				d.invokeReplica(successWrapper, d)
 			}
 		}
 	}()
@@ -948,6 +952,19 @@ func (d *Datasource) invoke(response wrapify.R) {
 	d.mu.RUnlock()
 	if callback != nil {
 		go callback(response)
+	}
+}
+
+// invokeReplica safely retrieves the registered replica callback function and, if one is set,
+// invokes it asynchronously with the provided wrapify.R response and a pointer to the replica Datasource.
+// This ensures that external consumers are notified of replica-specific connection status changes,
+// such as replica failovers, reconnection attempts, or health updates, without blocking the calling goroutine.
+func (d *Datasource) invokeReplica(response wrapify.R, replicator *Datasource) {
+	d.mu.RLock()
+	callback := d.onReplica
+	d.mu.RUnlock()
+	if callback != nil {
+		go callback(response, replicator)
 	}
 }
 
