@@ -123,6 +123,11 @@ type Datasource struct {
 	// A callback function that is invoked asynchronously when there is a change in connection status,
 	//  such as when the connection is lost, re-established, or its health is updated.
 	on func(response wrapify.R)
+	// notifier is an optional callback function used to propagate notifications for significant datasource events.
+	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,
+	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
+	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
+	notifier func(response wrapify.R)
 }
 
 // FuncMetadata represents the metadata for a function parameter retrieved from the PostgreSQL database.

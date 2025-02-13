@@ -95,6 +95,7 @@ func (d *Datasource) AllTables() wrapify.R {
 	err := d.conn.Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
@@ -127,6 +128,7 @@ func (d *Datasource) AllFunctions() wrapify.R {
 	err := d.conn.Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
@@ -156,6 +158,7 @@ func (d *Datasource) AllProcedures() wrapify.R {
 	err := d.conn.Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
@@ -210,6 +213,7 @@ func (d *Datasource) GetFuncMetadata(function string) wrapify.R {
 		d.conf.Database(), function)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), segments).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), segments).WithTotal(len(segments)).Reply()
@@ -245,6 +249,7 @@ func (d *Datasource) GetFuncBrief(function string) wrapify.R {
 	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&content)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), content).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), content).WithTotal(1).Reply()
@@ -283,6 +288,7 @@ func (d *Datasource) GetProcedureBrief(procedure string) wrapify.R {
 	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&content)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), content).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), content).WithTotal(1).Reply()
@@ -342,12 +348,14 @@ func (d *Datasource) GetTableBrief(table string) wrapify.R {
 		var m TableMetadata
 		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
+			d.notify(response.Reply())
 			return response.Reply()
 		}
 		results = append(results, m)
 	}
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' metadata successfully", table), results).WithTotal(len(results)).Reply()
@@ -389,6 +397,7 @@ func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
 	rows, err := d.conn.Query(s, table)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	defer rows.Close()
@@ -397,12 +406,14 @@ func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
 		var m ColumnMetadata
 		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
+			d.notify(response.Reply())
 			return response.Reply()
 		}
 		results = append(results, m)
 	}
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
@@ -455,6 +466,7 @@ func (d *Datasource) GetTableDDL(table string) wrapify.R {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), ddl).
 			WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 	return wrapify.WrapOk(fmt.Sprintf("DDL for table '%s' generated successfully", table), ddl).
@@ -617,6 +629,7 @@ func (d *Datasource) GetTableFullDDL(table string) wrapify.R {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), tableDDL).
 			WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 
@@ -754,6 +767,7 @@ func (d *Datasource) GetTableFullDDLDepth(table string) wrapify.R {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), tableDDL).
 			WithErrSck(err)
+		d.notify(response.Reply())
 		return response.Reply()
 	}
 
@@ -915,6 +929,19 @@ func (d *Datasource) reconnect() error {
 func (d *Datasource) invoke(response wrapify.R) {
 	d.mu.RLock()
 	callback := d.on
+	d.mu.RUnlock()
+	if callback != nil {
+		go callback(response)
+	}
+}
+
+// notify safely retrieves the registered notifier callback function and, if one is set,
+// invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
+// to notify external components of significant events (e.g., reconnection, keepalive updates)
+// without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
+func (d *Datasource) notify(response wrapify.R) {
+	d.mu.RLock()
+	callback := d.notifier
 	d.mu.RUnlock()
 	if callback != nil {
 		go callback(response)
