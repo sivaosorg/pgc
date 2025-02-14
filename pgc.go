@@ -12,6 +12,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func NewConf() *RConf {
+	return &RConf{}
+}
+
 // NewClient creates and returns a fully configured Datasource instance for PostgreSQL based on
 // the provided RConf configuration. This function attempts to establish an initial connection,
 // validate connectivity via a ping, and configure connection pool parameters (max idle, max open,
