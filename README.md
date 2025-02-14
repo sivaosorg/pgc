@@ -44,7 +44,7 @@ import "github.com/sivaosorg/pgc"
 
 ### Usage
 
-#### 1. Configure the Client
+#### Configure the Client
 
 You can configure the PostgreSQL client using the `RConf` struct. Here's an example configuration:
 
@@ -72,7 +72,7 @@ All in one by connection strings:
 conf.SetConnectionStrings("host=localhost port=5432 user=postgres password=your_password dbname=your_database sslmode=disable")
 ```
 
-#### 2. Create a New Client
+#### Create a New Client
 
 Use the `NewClient` function to create a new PostgreSQL client:
 
@@ -80,7 +80,7 @@ Use the `NewClient` function to create a new PostgreSQL client:
 client := pgc.NewClient(*conf)
 ```
 
-#### 3. Check Connection Status
+#### Check Connection Status
 
 You can check if the client is connected to the database:
 
@@ -93,7 +93,7 @@ if client.IsConnected() {
 }
 ```
 
-#### 4. Retrieve Metadata
+#### Retrieve Metadata
 
 You can retrieve metadata about tables, functions, procedures, and more:
 
@@ -123,7 +123,7 @@ if tableDDL.IsError() {
 }
 ```
 
-#### 5. Execute Custom Queries
+#### Execute Custom Queries
 
 You can execute custom SQL queries using the underlying `sqlx.DB` connection:
 
@@ -144,7 +144,7 @@ for rows.Next() {
 }
 ```
 
-#### 6. Handle Connection Events
+#### Handle Connection Events
 
 You can register callbacks to handle connection events, such as reconnection attempts or keepalive updates:
 
