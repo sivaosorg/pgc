@@ -57,12 +57,12 @@ jobs:
           fetch-depth: 0
 
       - name: Apply changelog
-        run: chmod +x git_changelog.sh
+        run: chmod +x ./sh/git_changelog.sh
 
       - name: Generate changelog
         id: changelog
         run: |
-          CHANGELOG=$(./git_changelog.sh)
+          CHANGELOG=$(./sh/git_changelog.sh)
           echo "CHANGELOG=$CHANGELOG" >> $GITHUB_ENV
 
       - name: Create GitHub Release
