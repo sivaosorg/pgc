@@ -12,7 +12,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func NewConf() *Settings {
+func NewSettings() *Settings {
 	return &Settings{}
 }
 
