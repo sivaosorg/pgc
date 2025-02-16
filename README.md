@@ -46,10 +46,10 @@ import "github.com/sivaosorg/pgc"
 
 #### Configure the Client
 
-You can configure the PostgreSQL client using the `RConf` struct. Here's an example configuration:
+You can configure the PostgreSQL client using the `Settings` struct. Here's an example configuration:
 
 ```go
-conf := &pgc.RConf{}
+conf := &pgc.Settings{}
 conf.SetEnable(true). // Enables or disables the Postgres connection.
     SetDebug(true). // Turns on/off debugging mode for more verbose logging.
     SetHost("localhost"). // The hostname or IP address of the PostgreSQL server.
@@ -165,7 +165,7 @@ client.SetOn(func(response wrapify.R) {
 ### API Reference
 
 ```go
-NewClient(conf pgc.RConf) *pgc.Datasource // Creates and returns a fully configured Datasource instance for PostgreSQL based on the provided RConf configuration.
+NewClient(conf pgc.Settings) *pgc.Datasource // Creates and returns a fully configured Datasource instance for PostgreSQL based on the provided Settings configuration.
 
 AllTables() wrapify.R // Retrieves the names of all base tables in the "public" schema of the connected PostgreSQL database.
 
@@ -211,7 +211,7 @@ import (
 )
 
 func main() {
-	conf := &pgc.RConf{}
+	conf := &pgc.Settings{}
 	conf.SetEnable(true).
 		SetHost("localhost").
 		SetPort(5432).
@@ -286,7 +286,7 @@ import (
 )
 
 func main() {
-	conf := &pgc.RConf{}
+	conf := &pgc.Settings{}
 	conf.SetEnable(true).
 		SetHost("localhost").
 		SetPort(5432).

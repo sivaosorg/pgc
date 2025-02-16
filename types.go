@@ -30,7 +30,7 @@ type WConf struct {
 	Schema            string        `yaml:"schema"`             // Default database schema to use.
 }
 
-type RConf struct {
+type Settings struct {
 	enabled   bool
 	debugging bool
 
@@ -114,8 +114,8 @@ type SslmodeVarious string
 type Datasource struct {
 	// A read-write mutex that ensures safe concurrent access to the Datasource fields.
 	mu sync.RWMutex
-	// An instance of RConf containing all the configuration parameters for the PostgreSQL connection.
-	conf RConf
+	// An instance of Settings containing all the configuration parameters for the PostgreSQL connection.
+	conf Settings
 	// A wrapify.R instance that holds the current connection status, error messages, and debugging information.
 	wrap wrapify.R
 	// A pointer to an sqlx.DB object representing the active connection to the PostgreSQL database.

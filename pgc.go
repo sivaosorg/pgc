@@ -12,19 +12,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func NewConf() *RConf {
-	return &RConf{}
+func NewConf() *Settings {
+	return &Settings{}
 }
 
 // NewClient creates and returns a fully configured Datasource instance for PostgreSQL based on
-// the provided RConf configuration. This function attempts to establish an initial connection,
+// the provided Settings configuration. This function attempts to establish an initial connection,
 // validate connectivity via a ping, and configure connection pool parameters (max idle, max open,
 // and connection lifetime). In addition, if keepalive is enabled, it starts a background routine
 // to continuously monitor the connection health and trigger reconnection when necessary.
 //
 // Returns:
 //   - A pointer to a Datasource instance that encapsulates the PostgreSQL connection and its configuration.
-func NewClient(conf RConf) *Datasource {
+func NewClient(conf Settings) *Datasource {
 	datasource := &Datasource{
 		conf: conf,
 	}
