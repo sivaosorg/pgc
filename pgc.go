@@ -110,7 +110,7 @@ func (d *Datasource) AllTables() wrapify.R {
 		return d.Wrap()
 	}
 	var tables []string
-	err := d.conn.Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
+	err := d.Conn().Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
 		d.notify(response.Reply())
@@ -143,7 +143,7 @@ func (d *Datasource) AllFunctions() wrapify.R {
 		return d.Wrap()
 	}
 	var functions []string
-	err := d.conn.Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
+	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
 		d.notify(response.Reply())
@@ -173,7 +173,7 @@ func (d *Datasource) AllProcedures() wrapify.R {
 		return d.Wrap()
 	}
 	var procedures []string
-	err := d.conn.Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
+	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
 		d.notify(response.Reply())
@@ -215,7 +215,7 @@ func (d *Datasource) GetFuncMetadata(function string) wrapify.R {
 		return d.Wrap()
 	}
 	var segments []FuncMetadata
-	err := d.conn.Select(&segments, `
+	err := d.Conn().Select(&segments, `
 			SELECT 
 				r.routine_name, 
 				p.data_type, 
@@ -264,7 +264,7 @@ func (d *Datasource) GetFuncBrief(function string) wrapify.R {
 		return d.Wrap()
 	}
 	var content string
-	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&content)
+	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&content)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), content).WithErrSck(err)
 		d.notify(response.Reply())
@@ -303,7 +303,7 @@ func (d *Datasource) GetProcedureBrief(procedure string) wrapify.R {
 		return d.Wrap()
 	}
 	var content string
-	err := d.conn.QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&content)
+	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&content)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), content).WithErrSck(err)
 		d.notify(response.Reply())
@@ -355,7 +355,7 @@ func (d *Datasource) GetTableBrief(table string) wrapify.R {
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
-	rows, err := d.conn.Query(s, table)
+	rows, err := d.Conn().Query(s, table)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the table '%s' metadata", table), nil).WithErrSck(err)
 		return response.Reply()
@@ -412,7 +412,7 @@ func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
 		WHERE
 			table_name = $1;
 	`
-	rows, err := d.conn.Query(s, table)
+	rows, err := d.Conn().Query(s, table)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
 		d.notify(response.Reply())
@@ -480,7 +480,7 @@ func (d *Datasource) GetTableDDL(table string) wrapify.R {
 			AND a.attnum > 0
 		GROUP BY c.relname;
 	`
-	err := d.conn.QueryRow(query, table).Scan(&ddl)
+	err := d.Conn().QueryRow(query, table).Scan(&ddl)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), ddl).
 			WithErrSck(err)
@@ -643,7 +643,7 @@ func (d *Datasource) GetTableFullDDL(table string) wrapify.R {
 		GROUP BY c.relname;
 	`
 
-	err := d.conn.QueryRow(ddlQuery, table).Scan(&tableDDL)
+	err := d.Conn().QueryRow(ddlQuery, table).Scan(&tableDDL)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), tableDDL).
 			WithErrSck(err)
@@ -670,7 +670,7 @@ func (d *Datasource) GetTableFullDDL(table string) wrapify.R {
 			GROUP BY tc.table_name, tc.constraint_name, ccu.table_name
 		) sub;
 	`
-	err = d.conn.QueryRow(fkQuery, table).Scan(&fkDDL)
+	err = d.Conn().QueryRow(fkQuery, table).Scan(&fkDDL)
 	if err != nil {
 		// If an error occurs (e.g. no foreign key constraints exist), default to an empty string.
 		fkDDL = ""
@@ -683,7 +683,7 @@ func (d *Datasource) GetTableFullDDL(table string) wrapify.R {
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
-	err = d.conn.QueryRow(indexQuery, table).Scan(&indexes)
+	err = d.Conn().QueryRow(indexQuery, table).Scan(&indexes)
 	if err != nil {
 		// If an error occurs (e.g. no indexes exist), default to an empty string.
 		indexes = ""
@@ -781,7 +781,7 @@ func (d *Datasource) GetTableFullDDLDepth(table string) wrapify.R {
 			AND a.attnum > 0
 		GROUP BY c.relname;
 	`
-	err := d.conn.QueryRow(ddlQuery, table).Scan(&tableDDL)
+	err := d.Conn().QueryRow(ddlQuery, table).Scan(&tableDDL)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the DDL for table '%s'", table), tableDDL).
 			WithErrSck(err)
@@ -808,7 +808,7 @@ func (d *Datasource) GetTableFullDDLDepth(table string) wrapify.R {
 			GROUP BY tc.table_name, tc.constraint_name, ccu.table_name
 		) sub;
 	`
-	err = d.conn.QueryRow(fkQuery, table).Scan(&fkDDL)
+	err = d.Conn().QueryRow(fkQuery, table).Scan(&fkDDL)
 	if err != nil {
 		// If an error occurs (e.g., no foreign key constraints exist), default to an empty string.
 		fkDDL = ""
@@ -822,7 +822,7 @@ func (d *Datasource) GetTableFullDDLDepth(table string) wrapify.R {
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
-	err = d.conn.QueryRow(indexQuery, table).Scan(&indexes)
+	err = d.Conn().QueryRow(indexQuery, table).Scan(&indexes)
 	if err != nil {
 		// If an error occurs (e.g., no indexes exist), default to an empty string.
 		indexes = ""
