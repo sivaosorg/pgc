@@ -30,8 +30,11 @@ func NewClient(conf Settings) *Datasource {
 	}
 	start := time.Now()
 	if !conf.IsEnabled() {
-		datasource.SetWrap(wrapify.WrapServiceUnavailable("Postgresql service unavailable", nil).
-			WithDebuggingKV("executed_in", time.Since(start).String()).Reply())
+		datasource.SetWrap(wrapify.
+			WrapServiceUnavailable("Postgresql service unavailable", nil).
+			WithDebuggingKV("executed_in", time.Since(start).String()).
+			WithHeader(wrapify.ServiceUnavailable).
+			Reply())
 		return datasource
 	}
 
@@ -42,7 +45,9 @@ func NewClient(conf Settings) *Datasource {
 			wrapify.WrapInternalServerError("Unable to connect to the postgresql database", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithDebuggingKV("executed_in", time.Since(start).String()).
-				WithErrSck(err).Reply(),
+				WithHeader(wrapify.InternalServerError).
+				WithErrSck(err).
+				Reply(),
 		)
 		return datasource
 	}
@@ -56,7 +61,9 @@ func NewClient(conf Settings) *Datasource {
 			wrapify.WrapInternalServerError("The postgresql database is unreachable", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithDebuggingKV("executed_in", time.Since(start).String()).
-				WithErrSck(err).Reply(),
+				WithHeader(wrapify.InternalServerError).
+				WithErrSck(err).
+				Reply(),
 		)
 		return datasource
 	}
@@ -71,7 +78,9 @@ func NewClient(conf Settings) *Datasource {
 		WithStatusCode(http.StatusOK).
 		WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 		WithDebuggingKV("executed_in", time.Since(start).String()).
-		WithMessagef("Successfully connected to the postgresql database: '%s'", conf.ConnString()).Reply())
+		WithMessagef("Successfully connected to the postgresql database: '%s'", conf.ConnString()).
+		WithHeader(wrapify.OK).
+		Reply())
 
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
