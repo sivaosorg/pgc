@@ -852,54 +852,50 @@ func (d *Datasource) keepalive() {
 	if interval <= 0 {
 		interval = defaultPingInterval
 	}
-
+	var response wrapify.R
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
+		reconnectAttempt := 0 // Initialize reconnect attempt count
 		for range ticker.C {
 			ps := time.Now()
 			if err := d.ping(); err != nil {
-				pingWrapper := wrapify.WrapInternalServerError("The postgresql database is currently unreachable. Initiating reconnection process...", nil).
+				response = wrapify.WrapInternalServerError("The postgresql database is currently unreachable. Initiating reconnection process...", nil).
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 					WithDebuggingKV("ping_executed_in", time.Since(ps).String()).
 					WithDebuggingKV("ping_start_at", ps.Format(defaultTimeFormat)).
 					WithErrSck(err).Reply()
-				d.SetWrap(pingWrapper)
-				d.invoke(pingWrapper)
-				d.invokeReplica(pingWrapper, d)
 
 				ps = time.Now()
 				if err := d.reconnect(); err != nil {
-					reconnectWrapper := wrapify.WrapInternalServerError("The postgresql database remains unreachable. The reconnection attempt has failed", nil).
+					reconnectAttempt++ // Increment reconnect count on failure reconnect
+					response = wrapify.WrapInternalServerError("The postgresql database remains unreachable. The reconnection attempt has failed", nil).
 						WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 						WithDebuggingKV("reconnect_executed_in", time.Since(ps).String()).
 						WithDebuggingKV("reconnect_start_at", ps.Format(defaultTimeFormat)).
+						WithDebuggingKV("reconnect_attempt", reconnectAttempt).
 						WithErrSck(err).Reply()
-					d.SetWrap(reconnectWrapper)
-					d.invoke(reconnectWrapper)
-					d.invokeReplica(reconnectWrapper, d)
 				} else {
-					successWrapper := wrapify.New().
+					reconnectAttempt = 0
+					response = wrapify.New().
 						WithStatusCode(http.StatusOK).
 						WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 						WithDebuggingKV("reconnect_executed_in", time.Since(ps).String()).
 						WithDebuggingKV("reconnect_start_at", ps.Format(defaultTimeFormat)).
 						WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
-					d.SetWrap(successWrapper)
-					d.invoke(successWrapper)
-					d.invokeReplica(successWrapper, d)
 				}
 			} else {
-				successWrapper := wrapify.New().
+				reconnectAttempt = 0
+				response = wrapify.New().
 					WithStatusCode(http.StatusOK).
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 					WithDebuggingKV("ping_executed_in", time.Since(ps).String()).
 					WithDebuggingKV("ping_start_at", ps.Format(defaultTimeFormat)).
 					WithMessagef("The connection to the postgresql database has been successfully established: '%s'", d.conf.ConnString()).Reply()
-				d.SetWrap(successWrapper)
-				d.invoke(successWrapper)
-				d.invokeReplica(successWrapper, d)
 			}
+			d.SetWrap(response)
+			d.invoke(response)
+			d.invokeReplica(response, d)
 		}
 	}()
 }
