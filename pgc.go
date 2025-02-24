@@ -864,7 +864,9 @@ func (d *Datasource) keepalive() {
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 					WithDebuggingKV("ping_executed_in", time.Since(ps).String()).
 					WithDebuggingKV("ping_start_at", ps.Format(defaultTimeFormat)).
-					WithErrSck(err).Reply()
+					WithErrSck(err).
+					WithHeader(wrapify.InternalServerError).
+					Reply()
 
 				ps = time.Now()
 				if err := d.reconnect(); err != nil {
@@ -874,7 +876,9 @@ func (d *Datasource) keepalive() {
 						WithDebuggingKV("reconnect_executed_in", time.Since(ps).String()).
 						WithDebuggingKV("reconnect_start_at", ps.Format(defaultTimeFormat)).
 						WithDebuggingKV("reconnect_attempt", reconnectAttempt).
-						WithErrSck(err).Reply()
+						WithErrSck(err).
+						WithHeader(wrapify.InternalServerError).
+						Reply()
 				} else {
 					reconnectAttempt = 0
 					response = wrapify.New().
@@ -882,7 +886,9 @@ func (d *Datasource) keepalive() {
 						WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 						WithDebuggingKV("reconnect_executed_in", time.Since(ps).String()).
 						WithDebuggingKV("reconnect_start_at", ps.Format(defaultTimeFormat)).
-						WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).Reply()
+						WithMessagef("The connection to the postgresql database has been successfully re-established: '%s'", d.conf.ConnString()).
+						WithHeader(wrapify.OK).
+						Reply()
 				}
 			} else {
 				reconnectAttempt = 0
@@ -891,7 +897,9 @@ func (d *Datasource) keepalive() {
 					WithDebuggingKV("pgsql_conn_str", d.conf.String(true)).
 					WithDebuggingKV("ping_executed_in", time.Since(ps).String()).
 					WithDebuggingKV("ping_start_at", ps.Format(defaultTimeFormat)).
-					WithMessagef("The connection to the postgresql database has been successfully established: '%s'", d.conf.ConnString()).Reply()
+					WithMessagef("The connection to the postgresql database has been successfully established: '%s'", d.conf.ConnString()).
+					WithHeader(wrapify.OK).
+					Reply()
 			}
 			d.SetWrap(response)
 			d.invoke(response)
