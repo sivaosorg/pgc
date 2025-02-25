@@ -136,6 +136,37 @@ type Datasource struct {
 	notifier func(response wrapify.R)
 }
 
+type Transaction struct {
+	// tx is the underlying *sqlx.Tx object that represents the active PostgreSQL transaction.
+	// It provides the core functionality for executing SQL statements within the transaction boundaries,
+	// ensuring atomicity and isolation as managed by the database. This field is used by methods like
+	// Commit, Rollback, and Save.point to interact with the database transaction.
+	tx *sqlx.Tx
+
+	// ds is a reference to the parent Datasource instance that initiated this transaction.
+	// It links the transaction back to the connection pool and configuration, allowing access to
+	// the Datasource's methods (e.g., notify) and state (e.g., connection health). This ensures that
+	// transaction operations can interact with the broader connection management system, such as
+	// logging or notifying external callbacks about transaction status changes.
+	ds *Datasource
+
+	// wrap holds the wrapify.R response object that encapsulates the current status or result
+	// of the transaction operations (e.g., begin, commit, rollback, save.point actions). It provides
+	// a consistent way to report success or failure, including detailed error messages, debugging
+	// information, and HTTP-like status codes, aligning with the error-handling approach used
+	// throughout the Datasource implementation. This field is updated by each transaction method
+	// to reflect the latest outcome.
+	wrap wrapify.R
+
+	// active is a boolean flag indicating whether the transaction is currently active and usable.
+	// It is set to true when the transaction begins and remains true until either Commit or Rollback
+	// is successfully called, at which point it is set to false. This flag prevents operations on
+	// a completed or aborted transaction, ensuring that methods like Commit, Rollback, or Save.point
+	// are only executed on a valid, ongoing transaction, thus maintaining consistency and preventing
+	// misuse.
+	active bool
+}
+
 // FuncMetadata represents the metadata for a function parameter retrieved from the PostgreSQL database.
 //
 // Fields:
