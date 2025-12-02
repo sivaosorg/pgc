@@ -124,39 +124,6 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	return t
 }
 
-// AllFunctions retrieves the names of all stored functions from the "public" schema of the connected PostgreSQL database.
-//
-// This function first verifies that the Datasource is currently connected. If the connection is not available,
-// it immediately returns the existing wrap response which indicates the connection status or any related error.
-//
-// It then executes a SQL query against the "information_schema.routines" table to obtain the names of all routines
-// that are classified as functions. The query filters results based on the current database (using the database name
-// from the configuration), the schema ('public'), and the routine type ('FUNCTION'). The retrieved function names
-// are stored in a slice of strings.
-//
-// In the event of an error during query execution, the error is wrapped using wrapify.WrapInternalServerError,
-// any partial results are attached, and the resulting error response is returned.
-//
-// If the query executes successfully, the function wraps the list of function names using wrapify.WrapOk,
-// attaches the total count of retrieved functions, and returns the successful response.
-//
-// Returns:
-//   - A wrapify.R instance that encapsulates either the list of function names or an error message,
-//     along with metadata such as the total count of functions.
-func (d *Datasource) AllFunctions() wrapify.R {
-	if !d.IsConnected() {
-		return d.Wrap()
-	}
-	var functions []string
-	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
-	if err != nil {
-		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
-		d.notify(response.Reply())
-		return response.Reply()
-	}
-	return wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
-}
-
 // AllProcedures retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
 //
 // The function first verifies that the Datasource is currently connected. If the connection is not active,
