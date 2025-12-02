@@ -124,64 +124,6 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	return t
 }
 
-// GetColumnsBrief retrieves metadata for all columns of the specified table from the PostgreSQL database.
-//
-// This function queries the information_schema.columns view to collect details about each column in the
-// specified table. The retrieved metadata includes the column name, data type, and the maximum character
-// length (if applicable). The SQL query filters the columns based on the provided table name.
-//
-// Initially, the function verifies that the Datasource is connected; if not, it returns the existing wrap
-// response which indicates the connection status. It then executes the query and iterates over the result rows,
-// scanning each row into a ColumnMetadata structure. If an error occurs during query execution or while scanning
-// the rows, the error is wrapped using wrapify.WrapInternalServerError and an error response is returned.
-// On successful execution, the function wraps the resulting slice of column metadata using wrapify.WrapOk,
-// attaches the total number of columns retrieved, and returns the successful response.
-//
-// Parameters:
-//   - table: The name of the table for which to retrieve column metadata.
-//
-// Returns:
-//   - A wrapify.R instance that encapsulates either the retrieved column metadata or an error message,
-//     along with additional metadata (e.g., the total count of columns).
-func (d *Datasource) GetColumnsBrief(table string) wrapify.R {
-	if !d.IsConnected() {
-		return d.Wrap()
-	}
-	s := `
-		SELECT
-			column_name,
-			data_type,
-			character_maximum_length
-		FROM
-			information_schema.columns
-		WHERE
-			table_name = $1;
-	`
-	rows, err := d.Conn().Query(s, table)
-	if err != nil {
-		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
-		d.notify(response.Reply())
-		return response.Reply()
-	}
-	defer rows.Close()
-	var results []ColumnMetadata
-	for rows.Next() {
-		var m ColumnMetadata
-		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
-			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
-			d.notify(response.Reply())
-			return response.Reply()
-		}
-		results = append(results, m)
-	}
-	if err := rows.Err(); err != nil {
-		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
-		d.notify(response.Reply())
-		return response.Reply()
-	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
-}
-
 // GetTableDDL generates the Data Definition Language (DDL) statement for creating the specified table
 // in the connected PostgreSQL database.
 //

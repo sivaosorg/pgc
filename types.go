@@ -238,13 +238,13 @@ type TableKeysMeta struct {
 	Desc string `json:"desc,omitempty" db:"descriptor"`
 }
 
-// ColumnMetadata represents metadata information for a column in a PostgreSQL table.
+// ColsSpecMeta represents metadata information for a column in a PostgreSQL table.
 //
 // Fields:
 //   - Column:    The name of the column.
 //   - Type:      The data type of the column.
 //   - MaxLength: The maximum character length allowed for the column (if applicable).
-type ColumnMetadata struct {
+type ColsSpecMeta struct {
 	Column    string   `json:"column" db:"column_name"`
 	Type      string   `json:"type" db:"data_type"`
 	MaxLength null.Int `json:"max_length" db:"character_maximum_length"`
