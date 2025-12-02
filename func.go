@@ -179,3 +179,80 @@ func (d *Datasource) FindTablesWithColumns(columns []string) wrapify.R {
 		results,
 	).WithTotal(len(results)).Reply()
 }
+
+// FindTablesWithAnyColumns searches for tables that contain AT LEAST ONE of the specified columns.
+//
+// This function queries the information_schema.columns view to find tables that contain
+// any of the columns in the provided list. Tables containing at least one matching column
+// will be returned, along with information about which columns matched.
+//
+// Parameters:
+//   - columns: A slice of column names to search for. Tables containing any of these
+//     columns will be included in the results.
+//
+// Returns:
+//   - A wrapify. R instance that encapsulates either a slice of TableWithColumns containing
+//     all tables with at least one specified column, or an error message.
+func (d *Datasource) FindTablesWithAnyColumns(columns []string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	if len(columns) == 0 {
+		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+	}
+
+	query := `
+		SELECT 
+			table_schema,
+			table_name,
+			array_agg(column_name ORDER BY column_name) AS matched_columns
+		FROM information_schema. columns
+		WHERE column_name = ANY($1)
+		  AND table_schema NOT IN ('pg_catalog', 'information_schema')
+		GROUP BY table_schema, table_name
+		ORDER BY table_schema, table_name;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(columns))
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while searching for tables with any columns %v", columns),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	defer rows.Close()
+
+	var results []TableWithColumns
+	for rows.Next() {
+		var r TableWithColumns
+		var matchedCols pq.StringArray
+		if err := rows.Scan(&r.SchemaName, &r.TableName, &matchedCols); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
+				nil,
+			).WithErrSck(err)
+			d.notify(response.Reply())
+			return response.Reply()
+		}
+		r.MatchedColumns = []string(matchedCols)
+		r.TotalColumns = len(columns)
+		r.MatchedCount = len(r.MatchedColumns)
+		results = append(results, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+
+	return wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) containing at least one of %d specified column(s)", len(results), len(columns)),
+		results,
+	).WithTotal(len(results)).Reply()
+}
