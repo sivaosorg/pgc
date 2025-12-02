@@ -630,7 +630,7 @@ func (d *Datasource) TablesByCols(columns []string) wrapify.R {
 	).WithTotal(len(results)).Reply()
 }
 
-// FindTablesWithAnyColumns searches for tables that contain AT LEAST ONE of the specified columns.
+// TablesByAnyCols searches for tables that contain AT LEAST ONE of the specified columns.
 //
 // This function queries the information_schema.columns view to find tables that contain
 // any of the columns in the provided list. Tables containing at least one matching column
@@ -643,7 +643,7 @@ func (d *Datasource) TablesByCols(columns []string) wrapify.R {
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns containing
 //     all tables with at least one specified column, or an error message.
-func (d *Datasource) FindTablesWithAnyColumns(columns []string) wrapify.R {
+func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 	if !d.IsConnected() {
 		return d.Wrap()
 	}
