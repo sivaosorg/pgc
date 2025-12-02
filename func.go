@@ -551,7 +551,7 @@ func (d *Datasource) ColsSpec(table string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
 }
 
-// FindTablesWithColumns searches for tables that contain ALL specified columns.
+// TablesByCols searches for tables that contain ALL specified columns.
 //
 // This function queries the information_schema.columns view to find tables that contain
 // every column in the provided list. Only tables containing ALL specified columns will
@@ -564,7 +564,7 @@ func (d *Datasource) ColsSpec(table string) wrapify.R {
 // Returns:
 //   - A wrapify.R instance that encapsulates either a slice of TableWithColumns containing
 //     all tables with all specified columns, or an error message, along with additional metadata.
-func (d *Datasource) FindTablesWithColumns(columns []string) wrapify.R {
+func (d *Datasource) TablesByCols(columns []string) wrapify.R {
 	if !d.IsConnected() {
 		return d.Wrap()
 	}
