@@ -256,3 +256,76 @@ func (d *Datasource) FindTablesWithAnyColumns(columns []string) wrapify.R {
 		results,
 	).WithTotal(len(results)).Reply()
 }
+
+// FindTablesWithColumnsInSchema searches for tables containing ALL specified columns within a specific schema.
+//
+// Parameters:
+//   - schema:  The name of the schema to search within.
+//   - columns: A slice of column names to search for.
+//
+// Returns:
+//   - A wrapify. R instance that encapsulates either a slice of TableWithColumns or an error message.
+func (d *Datasource) FindTablesWithColumnsInSchema(schema string, columns []string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	if len(columns) == 0 {
+		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+	}
+
+	query := `
+		SELECT 
+			table_schema,
+			table_name,
+			array_agg(column_name ORDER BY column_name) AS matched_columns
+		FROM information_schema. columns
+		WHERE table_schema = $1
+		  AND column_name = ANY($2)
+		GROUP BY table_schema, table_name
+		HAVING COUNT(DISTINCT column_name) = $3
+		ORDER BY table_name;
+	`
+
+	rows, err := d.Conn().Query(query, schema, pq.Array(columns), len(columns))
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while searching for tables with columns %v in schema '%s'", columns, schema),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	defer rows.Close()
+
+	var results []TableWithColumns
+	for rows.Next() {
+		var r TableWithColumns
+		var matchedCols pq.StringArray
+		if err := rows.Scan(&r.SchemaName, &r.TableName, &matchedCols); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning results for columns %v in schema '%s'", columns, schema),
+				nil,
+			).WithErrSck(err)
+			d.notify(response.Reply())
+			return response.Reply()
+		}
+		r.MatchedColumns = []string(matchedCols)
+		r.TotalColumns = len(columns)
+		r.MatchedCount = len(r.MatchedColumns)
+		results = append(results, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating results for columns %v in schema '%s'", columns, schema),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+
+	return wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(results), schema, len(columns)),
+		results,
+	).WithTotal(len(results)).Reply()
+}
