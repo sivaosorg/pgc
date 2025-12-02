@@ -232,6 +232,61 @@ func (d *Datasource) ProcDef(procedure string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
 }
 
+// TableDef generates the Data Definition Language (DDL) statement for creating the specified table
+// in the connected PostgreSQL database.
+//
+// This function constructs a DDL statement by querying the system catalog tables. It retrieves the table's name
+// and column information from pg_class, pg_namespace, and pg_attribute. The resulting query concatenates the
+// column definitions—including data types and NOT NULL constraints—into a formatted CREATE TABLE statement.
+//
+// The function first checks whether the Datasource is connected. If not, it returns the existing wrap response,
+// which includes connection status or error details. If the connection is active, it executes the query with the
+// specified table name, scans the generated DDL into a string variable, and handles any errors encountered during
+// query execution or scanning by wrapping them in a detailed error response.
+//
+// Upon success, the function returns a successful wrap response containing the generated DDL statement and the total
+// count (which is 1, as only one DDL statement is generated).
+//
+// Parameters:
+//   - table: The name of the table for which the DDL creation statement is to be generated.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the generated DDL statement (on success) or an error message
+//     (on failure), along with additional metadata.
+func (d *Datasource) TableDef(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var ddl string
+	query := `
+		SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+			array_to_string(
+				array_agg(
+					'    ' || quote_ident(a.attname) || ' ' ||
+					pg_catalog.format_type(a.atttypid, a.atttypmod) ||
+					CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+				), E',\n'
+			) || E'\n);\n' AS ddl
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE c.relname = $1
+			AND n.nspname = 'public'
+			AND a.attnum > 0
+		GROUP BY c.relname;
+	`
+	err := d.Conn().QueryRow(query, table).Scan(&ddl)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), ddl).
+			WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).
+		WithTotal(1).
+		Reply()
+}
+
 // TableKeys retrieves metadata information for the specified table from the connected PostgreSQL database.
 //
 // This function constructs and executes a SQL query that gathers various types of metadata for the given table,
