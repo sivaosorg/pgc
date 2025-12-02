@@ -124,61 +124,6 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	return t
 }
 
-// GetFuncMetadata retrieves detailed metadata for a specified function from the PostgreSQL database.
-//
-// This method first checks whether the Datasource is currently connected. If the connection is not available,
-// it immediately returns the current wrap response, which typically includes connection status or error details.
-//
-// The function then executes a SQL query that joins the information_schema.routines and information_schema.parameters
-// tables. This query retrieves the following metadata for the specified function:
-//   - The routine name,
-//   - The data type of each parameter,
-//   - The parameter name, and
-//   - The parameter mode (e.g., IN, OUT).
-//
-// The query filters results based on the current database (as provided in the configuration), the "public" schema,
-// and the function name provided as an argument. The retrieved data is stored in a slice of FuncMetadata structures.
-//
-// If an error occurs during query execution, the error is wrapped with a detailed message indicating that the
-// retrieval of the function metadata failed. Any partial results are included in the response, and the error response
-// is returned immediately.
-//
-// On success, the method wraps the retrieved metadata in a successful response, appending the total count of metadata
-// segments, and then returns this response.
-//
-// Parameters:
-//   - function: The name of the function for which metadata is to be retrieved.
-//
-// Returns:
-//   - A wrapify.R instance that encapsulates either the retrieved function metadata or an error message,
-//     along with additional metadata such as the total count of metadata segments.
-func (d *Datasource) GetFuncMetadata(function string) wrapify.R {
-	if !d.IsConnected() {
-		return d.Wrap()
-	}
-	var segments []FuncMetadata
-	err := d.Conn().Select(&segments, `
-			SELECT 
-				r.routine_name, 
-				p.data_type, 
-				p.parameter_name, 
-				p.parameter_mode 
-			FROM information_schema.routines r 
-			JOIN information_schema.parameters p 
-				ON r.specific_name = p.specific_name 
-			WHERE r.routine_catalog = $1 
-				AND r.routine_schema = 'public' 
-				AND r.routine_name = $2
-				`,
-		d.conf.Database(), function)
-	if err != nil {
-		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), segments).WithErrSck(err)
-		d.notify(response.Reply())
-		return response.Reply()
-	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), segments).WithTotal(len(segments)).Reply()
-}
-
 // GetFuncBrief retrieves the complete definition of a specified PostgreSQL function.
 //
 // This function uses the PostgreSQL built-in function pg_get_functiondef to obtain the

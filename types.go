@@ -212,14 +212,14 @@ type Transaction struct {
 	active bool
 }
 
-// FuncMetadata represents the metadata for a function parameter retrieved from the PostgreSQL database.
+// FuncSpecMeta represents the metadata for a function parameter retrieved from the PostgreSQL database.
 //
 // Fields:
 //   - DataType:    The data type of the function parameter.
 //   - RoutineName: The name of the function (routine) to which the parameter belongs.
 //   - ParamName:   The name of the parameter.
 //   - ParamMode:   The mode of the parameter (e.g., IN, OUT, INOUT).
-type FuncMetadata struct {
+type FuncSpecMeta struct {
 	DataType    string `db:"data_type" json:"type,omitempty"`
 	RoutineName string `db:"routine_name" json:"routine_name,omitempty"`
 	ParamName   string `db:"parameter_name" json:"param_name,omitempty"`
