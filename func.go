@@ -232,6 +232,73 @@ func (d *Datasource) ProcDef(procedure string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
 }
 
+// TableKeys retrieves metadata information for the specified table from the connected PostgreSQL database.
+//
+// This function constructs and executes a SQL query that gathers various types of metadata for the given table,
+// including primary key constraints, unique key constraints, and index definitions. It does so by performing a
+// UNION of three queries:
+//  1. The first query retrieves the name of the primary key constraint (labeled as "Primary Key") from the pg_constraint table.
+//  2. The second query retrieves the name of any unique key constraint (labeled as "Unique Key") from the pg_constraint table.
+//  3. The third query retrieves index information (labeled as "Index") from the pg_indexes view, including the index definition.
+//
+// The query uses PostgreSQL's regclass type conversion to reference the table by name and filters for constraints
+// and indexes that belong to the 'public' schema. The results are then scanned into a slice of TableMetadata structures.
+//
+// If the Datasource is not connected, the function immediately returns the existing wrap response which indicates the
+// connection status. If an error occurs during query execution or while scanning the result rows, the error is wrapped
+// using wrapify.WrapInternalServerError and the error response is returned. Upon successful execution, the function returns
+// a successful wrapify.R response containing the list of metadata records along with the total count of records retrieved.
+//
+// Parameters:
+//   - table: The name of the table for which metadata is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance encapsulating either the retrieved metadata (on success) or an error message (on failure).
+func (d *Datasource) TableKeys(table string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	s := `
+		SELECT conname AS c_name, 'Primary Key' AS type, '' as descriptor
+		FROM pg_constraint
+		WHERE conrelid = regclass($1)
+		AND confrelid = 0
+		AND contype = 'p'
+		UNION
+		SELECT conname AS c_name, 'Unique Key' AS type, '' as descriptor
+		FROM pg_constraint
+		WHERE conrelid = regclass($1)
+		AND confrelid = 0
+		AND contype = 'u'
+		UNION
+		SELECT indexname AS c_name, 'Index' AS type, indexdef as descriptor
+		FROM pg_indexes
+		WHERE tablename = $1;
+	`
+	rows, err := d.Conn().Query(s, table)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the table '%s' metadata", table), nil).WithErrSck(err)
+		return response.Reply()
+	}
+	defer rows.Close()
+	var results []TableKeysMeta
+	for rows.Next() {
+		var m TableKeysMeta
+		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
+			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
+			d.notify(response.Reply())
+			return response.Reply()
+		}
+		results = append(results, m)
+	}
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' metadata successfully", table), results).WithTotal(len(results)).Reply()
+}
+
 // FindTablesWithColumns searches for tables that contain ALL specified columns.
 //
 // This function queries the information_schema.columns view to find tables that contain

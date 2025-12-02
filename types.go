@@ -226,13 +226,13 @@ type FuncSpecMeta struct {
 	ParamMode   string `db:"parameter_mode" json:"param_mode,omitempty"`
 }
 
-// TableMetadata represents a single metadata record for a table in the PostgreSQL database.
+// TableKeysMeta represents a single metadata record for a table in the PostgreSQL database.
 //
 // Fields:
 //   - Name: The name of the constraint or index.
 //   - Type: The type of metadata (e.g., "Primary Key", "Unique Key", or "Index").
 //   - Desc: Additional details, such as the index definition, if applicable.
-type TableMetadata struct {
+type TableKeysMeta struct {
 	Name string `json:"name,omitempty" db:"c_name"`
 	Type string `json:"type,omitempty" db:"type"`
 	Desc string `json:"desc,omitempty" db:"descriptor"`
