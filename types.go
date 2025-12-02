@@ -265,3 +265,39 @@ type TableWithColumns struct {
 	TotalColumns   int      `json:"total_columns"`
 	MatchedCount   int      `json:"matched_count"`
 }
+
+// ColumnExistsResult represents the result of checking if a column exists in a specific table.
+//
+// Fields:
+//   - TableName:  The name of the table containing the column.
+//   - SchemaName: The schema name where the table resides.
+//   - ColumnName: The name of the column being checked.
+//   - DataType:   The data type of the column.
+//   - IsNullable: Indicates whether the column allows NULL values.
+type ColumnExistsResult struct {
+	TableName  string `json:"table_name" db:"table_name"`
+	SchemaName string `json:"schema_name" db:"table_schema"`
+	ColumnName string `json:"column_name" db:"column_name"`
+	DataType   string `json:"data_type" db:"data_type"`
+	IsNullable string `json:"is_nullable" db:"is_nullable"`
+}
+
+// FindTablesWithColumnsDetailed searches for tables and returns detailed information about column matches.
+//
+// This function provides comprehensive information including which columns were found,
+// which were missing, and detailed metadata for each matched column.
+//
+// Parameters:
+//   - columns: A slice of column names to search for.
+//
+// Returns:
+//   - A wrapify. R instance containing detailed matching information.
+type TableColumnsDetail struct {
+	TableName      string               `json:"table_name"`
+	SchemaName     string               `json:"schema_name"`
+	MatchedColumns []ColumnExistsResult `json:"matched_columns"`
+	MissingColumns []string             `json:"missing_columns"`
+	TotalRequested int                  `json:"total_requested"`
+	MatchedCount   int                  `json:"matched_count"`
+	IsFullMatch    bool                 `json:"is_full_match"`
+}

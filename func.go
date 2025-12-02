@@ -2,6 +2,7 @@ package pgc
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/sivaosorg/wrapify"
 
@@ -326,6 +327,128 @@ func (d *Datasource) FindTablesWithColumnsInSchema(schema string, columns []stri
 
 	return wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(results), schema, len(columns)),
+		results,
+	).WithTotal(len(results)).Reply()
+}
+
+// FindTablesWithColumnsDetailed searches for tables and returns detailed information about column matches.
+//
+// This function provides comprehensive information including which columns were found,
+// which were missing, and detailed metadata for each matched column.
+//
+// Parameters:
+//   - columns: A slice of column names to search for.
+//
+// Returns:
+//   - A wrapify. R instance containing detailed matching information.
+func (d *Datasource) FindTablesWithColumnsDetailed(columns []string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	if len(columns) == 0 {
+		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+	}
+
+	// First, get all tables that have at least one of the columns
+	query := `
+		SELECT 
+			table_schema,
+			table_name,
+			column_name,
+			data_type,
+			is_nullable
+		FROM information_schema. columns
+		WHERE column_name = ANY($1)
+		  AND table_schema NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY table_schema, table_name, column_name;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(columns))
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	defer rows.Close()
+
+	// Group results by table
+	tableMap := make(map[string]*TableColumnsDetail)
+	for rows.Next() {
+		var col ColumnExistsResult
+		if err := rows.Scan(&col.SchemaName, &col.TableName, &col.ColumnName, &col.DataType, &col.IsNullable); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
+				nil,
+			).WithErrSck(err)
+			d.notify(response.Reply())
+			return response.Reply()
+		}
+
+		key := col.SchemaName + "." + col.TableName
+		if tableMap[key] == nil {
+			tableMap[key] = &TableColumnsDetail{
+				TableName:      col.TableName,
+				SchemaName:     col.SchemaName,
+				MatchedColumns: []ColumnExistsResult{},
+				TotalRequested: len(columns),
+			}
+		}
+		tableMap[key].MatchedColumns = append(tableMap[key].MatchedColumns, col)
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
+			nil,
+		).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+
+	// Build result with missing columns info
+	var results []TableColumnsDetail
+	for _, detail := range tableMap {
+		matchedSet := make(map[string]bool)
+		for _, col := range detail.MatchedColumns {
+			matchedSet[col.ColumnName] = true
+		}
+
+		var missing []string
+		for _, col := range columns {
+			if !matchedSet[col] {
+				missing = append(missing, col)
+			}
+		}
+
+		detail.MissingColumns = missing
+		detail.MatchedCount = len(detail.MatchedColumns)
+		detail.IsFullMatch = len(missing) == 0
+		results = append(results, *detail)
+	}
+
+	// Sort results: full matches first, then by match count descending
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].IsFullMatch != results[j].IsFullMatch {
+			return results[i].IsFullMatch
+		}
+		if results[i].MatchedCount != results[j].MatchedCount {
+			return results[i].MatchedCount > results[j].MatchedCount
+		}
+		return results[i].SchemaName+"."+results[i].TableName < results[j].SchemaName+"."+results[j].TableName
+	})
+
+	fullMatchCount := 0
+	for _, r := range results {
+		if r.IsFullMatch {
+			fullMatchCount++
+		}
+	}
+
+	return wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(results), fullMatchCount, len(columns)),
 		results,
 	).WithTotal(len(results)).Reply()
 }
