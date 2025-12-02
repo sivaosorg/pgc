@@ -157,6 +157,42 @@ func (d *Datasource) FuncSpec(function string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
 }
 
+// FuncDef retrieves the complete definition of a specified PostgreSQL function.
+//
+// This function uses the PostgreSQL built-in function pg_get_functiondef to obtain the
+// full SQL definition of the function identified by the provided name. It queries the database
+// for the function's definition and scans the resulting output into a string.
+//
+// The function first checks if the Datasource is connected. If the connection is not active,
+// it returns the current wrap response that contains the connection status or error details.
+//
+// In the event of an error during the query execution, such as if the function cannot be found or
+// another database error occurs, the error is wrapped using wrapify.WrapInternalServerError, along with
+// the partial content (if any), and the resulting error response is returned.
+//
+// If the query succeeds, the function wraps the retrieved function definition in a successful response,
+// sets the total count to 1 (since a single definition is returned), and then returns this response.
+//
+// Parameters:
+//   - function: The name of the PostgreSQL function whose definition is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the function's complete definition or an error message,
+//     along with additional metadata.
+func (d *Datasource) FuncDef(function string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var def string
+	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&def)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), def).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
+}
+
 // FindTablesWithColumns searches for tables that contain ALL specified columns.
 //
 // This function queries the information_schema.columns view to find tables that contain
