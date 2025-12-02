@@ -103,7 +103,7 @@ You can retrieve metadata about tables, functions, procedures, and more:
 
 ```go
 // Get all tables in the database
-tables := client.AllTables()
+tables := client.Tables()
 if tables.IsError() {
 	fmt.Println(tables.Cause().Error())
 } else {
@@ -111,7 +111,7 @@ if tables.IsError() {
 }
 
 // Get metadata for a specific table
-tableMetadata := client.GetTableBrief("my_table")
+tableMetadata := client.TableKeys("my_table")
 if tableMetadata.IsError() {
 	fmt.Println(tableMetadata.Cause().Error())
 } else {
@@ -119,7 +119,7 @@ if tableMetadata.IsError() {
 }
 
 // Get DDL for a specific table
-tableDDL := client.GetTableDDL("my_table")
+tableDDL := client.TableDefPlus("my_table")
 if tableDDL.IsError() {
 	fmt.Println(tableDDL.Cause().Error())
 } else {
@@ -167,27 +167,23 @@ client.SetOn(func(response wrapify.R) {
 ```go
 NewClient(conf pgc.Settings) *pgc.Datasource // Creates and returns a fully configured Datasource instance for PostgreSQL based on the provided Settings configuration.
 
-AllTables() wrapify.R // Retrieves the names of all base tables in the "public" schema of the connected PostgreSQL database.
+Tables() wrapify.R // Retrieves the names of all base tables in the "public" schema of the connected PostgreSQL database.
 
-AllFunctions() wrapify.R // Retrieves the names of all stored functions from the "public" schema of the connected PostgreSQL database.
+Functions() wrapify.R // Retrieves the names of all stored functions from the "public" schema of the connected PostgreSQL database.
 
-AllProcedures() wrapify.R // Retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
+Procedures() wrapify.R // Retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
 
-GetFuncMetadata(function string) wrapify.R // Retrieves detailed metadata for a specified function from the PostgreSQL database.
+FuncSpec(function string) wrapify.R // Retrieves detailed metadata for a specified function from the PostgreSQL database.
 
-GetFuncBrief(function string) wrapify.R // Retrieves the complete definition of a specified PostgreSQL function.
+FuncDef(function string) wrapify.R // Retrieves the complete definition of a specified PostgreSQL function.
 
-GetProcedureBrief(procedure string) wrapify.R // Retrieves the complete definition of a specified PostgreSQL procedure.
+ProcDef(procedure string) wrapify.R // Retrieves the complete definition of a specified PostgreSQL procedure.
 
-GetTableBrief(table string) wrapify.R // Retrieves metadata information for the specified table from the connected PostgreSQL database.
+TableDef(table string) wrapify.R // Retrieves metadata information for the specified table from the connected PostgreSQL database.
 
-GetColumnsBrief(table string) wrapify.R // Retrieves metadata for all columns of the specified table from the PostgreSQL database.
+ColsSpec(table string) wrapify.R // Retrieves metadata for all columns of the specified table from the PostgreSQL database.
 
-GetTableDDL(table string) wrapify.R // Generates the Data Definition Language (DDL) statement for creating the specified table in the connected PostgreSQL database.
-
-GetTableFullDDL(table string) wrapify.R // Generates a comprehensive Data Definition Language (DDL) script for the specified table, including its creation statement, relationships, constraints, and indexes.
-
-GetTableFullDDLDepth(table string) wrapify.R // Generates a comprehensive DDL script for the specified table, including detailed column definitions, default values, primary key markers, and sequence indicators.
+TableDefPlus(table string) wrapify.R // Generates a comprehensive DDL script for the specified table, including detailed column definitions, default values, primary key markers, and sequence indicators.
 
 keepalive() // Initiates a background goroutine that periodically pings the PostgreSQL database to monitor connection health.
 
@@ -236,7 +232,7 @@ func main() {
 	}
 
 	// Get all tables in the database
-	tables := client.AllTables()
+	tables := client.Tables()
 	if tables.IsError() {
 		fmt.Println(tables.Cause().Error())
 	} else {
@@ -244,7 +240,7 @@ func main() {
 	}
 
 	// Get metadata for a specific table
-	tableMetadata := client.GetTableBrief("my_table")
+	tableMetadata := client.TableKeys("my_table")
 	if tableMetadata.IsError() {
 		fmt.Println(tableMetadata.Cause().Error())
 	} else {
@@ -252,7 +248,7 @@ func main() {
 	}
 
 	// Get DDL for a specific table
-	tableDDL := client.GetTableDDL("my_table")
+	tableDDL := client.TableDefPlus("my_table")
 	if tableDDL.IsError() {
 		fmt.Println(tableDDL.Cause().Error())
 	} else {
