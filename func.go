@@ -707,7 +707,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 	).WithTotal(len(results)).Reply()
 }
 
-// FindTablesWithColumnsInSchema searches for tables containing ALL specified columns within a specific schema.
+// TablesByColsIn searches for tables containing ALL specified columns within a specific schema.
 //
 // Parameters:
 //   - schema:  The name of the schema to search within.
@@ -715,7 +715,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 //
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns or an error message.
-func (d *Datasource) FindTablesWithColumnsInSchema(schema string, columns []string) wrapify.R {
+func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 	if !d.IsConnected() {
 		return d.Wrap()
 	}
