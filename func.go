@@ -193,6 +193,45 @@ func (d *Datasource) FuncDef(function string) wrapify.R {
 	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
 }
 
+// ProcDef retrieves the complete definition of a specified PostgreSQL procedure.
+//
+// This method leverages the PostgreSQL built-in function pg_get_functiondef to obtain the SQL definition
+// of the procedure identified by the given name. Although pg_get_functiondef is primarily used for functions,
+// it can also be used to retrieve definitions of procedures registered in the system catalog.
+//
+// The function first checks whether the Datasource is currently connected. If the connection is not active,
+// it immediately returns the existing wrap response containing the connection status or error details.
+//
+// It then executes a SQL query that calls pg_get_functiondef, passing the procedure's identifier (cast as regproc)
+// to retrieve its definition. The resulting definition is scanned into a string variable named content.
+//
+// If an error occurs during query execution (e.g., if the procedure does not exist or a database error occurs),
+// the error is wrapped using wrapify.WrapInternalServerError, along with any partial content, and the resulting
+// error response is returned.
+//
+// On success, the function wraps the retrieved procedure definition in a successful response, sets the total
+// count to 1 (since a single definition is returned), and then returns this response.
+//
+// Parameters:
+//   - procedure: The name of the PostgreSQL procedure whose definition is to be retrieved.
+//
+// Returns:
+//   - A wrapify.R instance that encapsulates either the procedure's complete definition or an error message,
+//     along with additional metadata such as the total count (1 in this case).
+func (d *Datasource) ProcDef(procedure string) wrapify.R {
+	if !d.IsConnected() {
+		return d.Wrap()
+	}
+	var def string
+	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&def)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
+		d.notify(response.Reply())
+		return response.Reply()
+	}
+	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
+}
+
 // FindTablesWithColumns searches for tables that contain ALL specified columns.
 //
 // This function queries the information_schema.columns view to find tables that contain
