@@ -780,7 +780,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 	).WithTotal(len(results)).Reply()
 }
 
-// FindTablesWithColumnsDetailed searches for tables and returns detailed information about column matches.
+// TablesByColsDeep searches for tables and returns detailed information about column matches.
 //
 // This function provides comprehensive information including which columns were found,
 // which were missing, and detailed metadata for each matched column.
@@ -790,7 +790,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 //
 // Returns:
 //   - A wrapify. R instance containing detailed matching information.
-func (d *Datasource) FindTablesWithColumnsDetailed(columns []string) wrapify.R {
+func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
 	if !d.IsConnected() {
 		return d.Wrap()
 	}
