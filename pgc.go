@@ -124,36 +124,6 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	return t
 }
 
-// AllProcedures retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
-//
-// The function first verifies that the Datasource is currently connected. If the connection is not active,
-// it immediately returns the current wrap response (which may contain status or error details).
-//
-// It then executes a SQL query against the "information_schema.routines" table to obtain the names of all routines
-// classified as procedures. The query filters results based on the database name (using the configuration's database),
-// the schema ('public'), and the routine type ('PROCEDURE'). The retrieved procedure names are stored in a slice of strings.
-//
-// In the event of a query error, the function wraps the error using wrapify.WrapInternalServerError, attaches any partial
-// results if available, and returns the resulting error response. If the query is successful, it wraps the list of procedure names
-// using wrapify.WrapOk, includes the total count of procedures, and returns the successful response.
-//
-// Returns:
-//   - A wrapify.R instance that encapsulates either the list of procedure names or an error message, along with metadata
-//     such as the total count of procedures.
-func (d *Datasource) AllProcedures() wrapify.R {
-	if !d.IsConnected() {
-		return d.Wrap()
-	}
-	var procedures []string
-	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
-	if err != nil {
-		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
-		d.notify(response.Reply())
-		return response.Reply()
-	}
-	return wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
-}
-
 // GetFuncMetadata retrieves detailed metadata for a specified function from the PostgreSQL database.
 //
 // This method first checks whether the Datasource is currently connected. If the connection is not available,
