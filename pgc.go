@@ -89,6 +89,41 @@ func NewClient(conf Settings) *Datasource {
 	return datasource
 }
 
+func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
+	if !d.IsConnected() {
+		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).WithHeader(wrapify.ServiceUnavailable).Reply()
+		d.notify(response)
+		t := &Transaction{
+			ds:     d,
+			tx:     nil,
+			active: false,
+			wrap:   response,
+		}
+		return t
+	}
+	tx, err := d.Conn().BeginTxx(ctx, nil)
+	if err != nil {
+		response := wrapify.WrapInternalServerError("Failed to start transaction", nil).WithHeader(wrapify.InternalServerError).WithErrSck(err).Reply()
+		d.notify(response)
+		t := &Transaction{
+			ds:     d,
+			tx:     nil,
+			active: false,
+			wrap:   response,
+		}
+		return t
+	}
+	response := wrapify.WrapOk("Transaction started successfully", nil).WithHeader(wrapify.OK).Reply()
+	t := &Transaction{
+		ds:     d,
+		tx:     tx,
+		active: true,
+		wrap:   response,
+	}
+	d.notify(response)
+	return t
+}
+
 // AllTables retrieves the names of all base tables in the "public" schema of the connected PostgreSQL database.
 //
 // This function first verifies whether the Datasource is currently connected. If not, it returns the current wrap

@@ -415,6 +415,30 @@ func (d *Datasource) SetNotifier(fnc func(response wrapify.R)) *Datasource {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Getter Transaction
+//_______________________________________________________________________
+
+func (t *Transaction) Tx() *sqlx.Tx {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.tx
+}
+
+func (t *Transaction) Ds() *Datasource {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.ds
+}
+
+func (t *Transaction) Wrap() wrapify.R {
+	return t.wrap
+}
+
+func (t *Transaction) IsActivated() bool {
+	return t.active
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Bind Configs
 //_______________________________________________________________________
 

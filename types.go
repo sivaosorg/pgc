@@ -137,6 +137,9 @@ type Datasource struct {
 }
 
 type Transaction struct {
+	// A read-write mutex that ensures safe concurrent access to the Datasource fields.
+	mu sync.RWMutex
+
 	// tx is the underlying *sqlx.Tx object that represents the active PostgreSQL transaction.
 	// It provides the core functionality for executing SQL statements within the transaction boundaries,
 	// ensuring atomicity and isolation as managed by the database. This field is used by methods like
