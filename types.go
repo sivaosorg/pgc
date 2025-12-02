@@ -9,6 +9,27 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+// WConf represents the configuration for the PostgreSQL connection.
+//
+// Fields:
+//   - IsEnabled:         Indicates whether the Postgres connection is enabled.
+//   - IsDebugging:       Indicates whether debugging mode is enabled.
+//   - Host:              The hostname or IP address of the Postgres server.
+//   - Port:              The port number on which the Postgres server listens.
+//   - User:              The username used to authenticate with the Postgres server.
+//   - Password:          The password corresponding to the specified user.
+//   - Database:          The name of the database to connect to.
+//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+//   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
+//   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
+//   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
+//   - MaxIdleConn:       The maximum number of idle connections maintained in the pool.
+//   - ConnMaxLifetime:   The maximum lifetime of a connection before it is recycled (e.g., "1h", "30m").
+//   - PingInterval:      The interval between health-check pings to the database.
+//   - KeepAlive:         Enables TCP keepalive to maintain persistent connections.
+//   - ConnectionStrings: Full connection string example; alternative to specifying individual connection parameters.
+//   - Optional:          Set to true if the connection is optional (won't cause the application to fail if unavailable).
+//   - Schema:            Default database schema to use.
 type WConf struct {
 	IsEnabled         bool          `yaml:"enabled"`            // Enables or disables the Postgres connection.
 	IsDebugging       bool          `yaml:"debugging"`          // Turns on/off debugging mode for more verbose logging.
@@ -30,6 +51,27 @@ type WConf struct {
 	Schema            string        `yaml:"schema"`             // Default database schema to use.
 }
 
+// Settings represents the runtime configuration for the PostgreSQL connection.
+//
+// Fields:
+//   - Enabled:         Indicates whether the Postgres connection is enabled.
+//   - Debugging:       Indicates whether debugging mode is enabled.
+//   - Host:              The hostname or IP address of the Postgres server.
+//   - Port:              The port number on which the Postgres server listens.
+//   - User:              The username used to authenticate with the Postgres server.
+//   - Password:          The password corresponding to the specified user.
+//   - Database:          The name of the database to connect to.
+//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+//   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
+//   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
+//   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
+//   - MaxIdleConn:       The maximum number of idle connections maintained in the pool.
+//   - ConnMaxLifetime:   The maximum lifetime of a connection before it is recycled (e.g., "1h", "30m").
+//   - PingInterval:      The interval between health-check pings to the database.
+//   - KeepAlive:         Enables TCP keepalive to maintain persistent connections.
+//   - ConnectionStrings: Full connection string example; alternative to specifying individual connection parameters.
+//   - Optional:          Set to true if the connection is optional (won't cause the application to fail if unavailable).
+//   - Schema:            Default database schema to use.
 type Settings struct {
 	enabled   bool
 	debugging bool
@@ -206,4 +248,20 @@ type ColumnMetadata struct {
 	Column    string   `json:"column" db:"column_name"`
 	Type      string   `json:"type" db:"data_type"`
 	MaxLength null.Int `json:"max_length" db:"character_maximum_length"`
+}
+
+// TableWithColumns represents a table that contains specified columns.
+//
+// Fields:
+//   - TableName:   The name of the table.
+//   - SchemaName:  The schema name where the table resides.
+//   - MatchedColumns: List of columns that were found in this table.
+//   - TotalColumns:   Total number of columns requested.
+//   - MatchedCount:   Number of columns that matched.
+type TableWithColumns struct {
+	TableName      string   `json:"table_name" db:"table_name"`
+	SchemaName     string   `json:"schema_name" db:"table_schema"`
+	MatchedColumns []string `json:"matched_columns"`
+	TotalColumns   int      `json:"total_columns"`
+	MatchedCount   int      `json:"matched_count"`
 }
