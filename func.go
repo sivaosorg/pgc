@@ -776,12 +776,14 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableWithColumns, r
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns containing
 //     all tables with at least one specified column, or an error message.
-func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
+func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableWithColumns, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return stats, d.Wrap()
 	}
 	if len(columns) == 0 {
-		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
+		d.notify(response.Reply())
+		return stats, response.Reply()
 	}
 
 	query := `
@@ -803,11 +805,10 @@ func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 	defer rows.Close()
 
-	var results []TableWithColumns
 	for rows.Next() {
 		var r TableWithColumns
 		var matchedCols pq.StringArray
@@ -817,12 +818,12 @@ func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 				nil,
 			).WithErrSck(err)
 			d.notify(response.Reply())
-			return response.Reply()
+			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
 		r.TotalColumns = len(columns)
 		r.MatchedCount = len(r.MatchedColumns)
-		results = append(results, r)
+		stats = append(stats, r)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -831,13 +832,22 @@ func (d *Datasource) TablesByAnyCols(columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 
-	return wrapify.WrapOk(
-		fmt.Sprintf("Found %d table(s) containing at least one of %d specified column(s)", len(results), len(columns)),
-		results,
-	).WithTotal(len(results)).Reply()
+	if len(stats) == 0 {
+		response := wrapify.WrapNotFound(
+			fmt.Sprintf("No tables found containing any of the specified columns '%v'", strings.Join(columns, ", ")),
+			stats,
+		).BindCause()
+		d.notify(response.Reply())
+		return stats, response.Reply()
+	}
+
+	return stats, wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) containing at least one of %d specified column(s)", len(stats), len(columns)),
+		stats,
+	).WithTotal(len(stats)).Reply()
 }
 
 // TablesByColsIn searches for tables containing ALL specified columns within a specific schema.
