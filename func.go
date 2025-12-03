@@ -127,11 +127,16 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates either the retrieved function metadata or an error message,
 //     along with additional metadata such as the total count of metadata segments.
-func (d *Datasource) FuncSpec(function string) wrapify.R {
+func (d *Datasource) FuncSpec(function string) (fsm []FuncSpecMeta, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return fsm, d.Wrap()
 	}
-	var fsm []FuncSpecMeta
+	if isEmpty(function) {
+		response := wrapify.WrapBadRequest("Function name is required", fsm).BindCause()
+		d.notify(response.Reply())
+		return fsm, response.Reply()
+	}
+
 	err := d.Conn().Select(&fsm, `
 			SELECT 
 				r.routine_name, 
@@ -146,12 +151,20 @@ func (d *Datasource) FuncSpec(function string) wrapify.R {
 				AND r.routine_name = $2
 				`,
 		d.conf.Database(), function)
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), fsm).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return fsm, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
+
+	if len(fsm) == 0 {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), fsm).BindCause()
+		d.notify(response.Reply())
+		return fsm, response.Reply()
+	}
+
+	return fsm, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
 }
 
 // FuncDef retrieves the complete definition of a specified PostgreSQL function.
