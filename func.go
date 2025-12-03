@@ -90,12 +90,20 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	if !d.IsConnected() {
 		return procedures, d.Wrap()
 	}
+
 	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
 		d.notify(response.Reply())
 		return procedures, response.Reply()
 	}
+
+	if len(procedures) == 0 {
+		response := wrapify.WrapNotFound("No procedures found", procedures).BindCause()
+		d.notify(response.Reply())
+		return procedures, response.Reply()
+	}
+
 	return procedures, wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
 }
 
