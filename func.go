@@ -74,16 +74,17 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionListing, EventLevelError, response.Reply())
 		return functions, response.Reply()
 	}
 
 	if len(functions) == 0 {
 		response := wrapify.WrapNotFound("No functions found", functions).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionListing, EventLevelError, response.Reply())
 		return functions, response.Reply()
 	}
 
+	d.dispatch_event(EventFunctionListing, EventLevelSuccess, response.Reply())
 	return functions, wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
 }
 
