@@ -858,12 +858,14 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableWithColumns
 //
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns or an error message.
-func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
+func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []TableWithColumns, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return stats, d.Wrap()
 	}
 	if len(columns) == 0 {
-		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
+		d.notify(response.Reply())
+		return stats, response.Reply()
 	}
 
 	query := `
@@ -886,11 +888,10 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 	defer rows.Close()
 
-	var results []TableWithColumns
 	for rows.Next() {
 		var r TableWithColumns
 		var matchedCols pq.StringArray
@@ -900,12 +901,12 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 				nil,
 			).WithErrSck(err)
 			d.notify(response.Reply())
-			return response.Reply()
+			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
 		r.TotalColumns = len(columns)
 		r.MatchedCount = len(r.MatchedColumns)
-		results = append(results, r)
+		stats = append(stats, r)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -914,13 +915,22 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 
-	return wrapify.WrapOk(
-		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(results), schema, len(columns)),
-		results,
-	).WithTotal(len(results)).Reply()
+	if len(stats) == 0 {
+		response := wrapify.WrapNotFound(
+			fmt.Sprintf("No tables found in schema '%s' containing all specified columns '%v'", schema, strings.Join(columns, ", ")),
+			stats,
+		).BindCause()
+		d.notify(response.Reply())
+		return stats, response.Reply()
+	}
+
+	return stats, wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(stats), schema, len(columns)),
+		stats,
+	).WithTotal(len(stats)).Reply()
 }
 
 // TablesByColsDeep searches for tables and returns detailed information about column matches.
