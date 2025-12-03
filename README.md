@@ -207,7 +207,7 @@ import (
 )
 
 func main() {
-	conf := &pgc.Settings{}
+	conf := pgc.NewSettings()
 	conf.SetEnable(true).
 		SetHost("localhost").
 		SetPort(5432).
@@ -231,28 +231,38 @@ func main() {
 		return
 	}
 
+	callback := func(response wrapify.R, replicator *pgc.Datasource) {
+		if response.IsSuccess() {
+			loggy.Infof("%s Connection state: %v, message: %v", response.Meta().RequestID(), response.Reply().StatusText(), response.Message())
+		}
+		if response.IsError() {
+			loggy.Errorf("root: %v, debug: %v, msg: %v", response.Cause().Error(), response.Debugging(), response.Message())
+		}
+	}
+	client.SetOnReplica(callback)
+
 	// Get all tables in the database
-	tables := client.Tables()
-	if tables.IsError() {
-		fmt.Println(tables.Cause().Error())
+	ous, response := client.Tables()
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
 	} else {
-		fmt.Println(tables.Body())
+		loggy.Infof("tables: %v", unify4g.JsonN(ous))
 	}
 
 	// Get metadata for a specific table
-	tableMetadata := client.TableKeys("my_table")
-	if tableMetadata.IsError() {
-		fmt.Println(tableMetadata.Cause().Error())
+	ous1, response := client.TableKeys("my_table")
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
 	} else {
-		fmt.Println(tableMetadata.Body())
+		loggy.Infof("table keys: %v", unify4g.JsonN(ous1))
 	}
 
 	// Get DDL for a specific table
-	tableDDL := client.TableDefPlus("my_table")
-	if tableDDL.IsError() {
-		fmt.Println(tableDDL.Cause().Error())
+	ous2, response := client.TableDefPlus("my_table")
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
 	} else {
-		fmt.Println(tableDDL.Body())
+		loggy.Infof("table definition: %v", unify4g.JsonN(ous2))
 	}
 
 	// Since keepalive is false and no background goroutine is running,
