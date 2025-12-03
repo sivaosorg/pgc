@@ -102,29 +102,29 @@ if client.IsConnected() {
 You can retrieve metadata about tables, functions, procedures, and more:
 
 ```go
-// Get all tables in the database
-tables := client.Tables()
-if tables.IsError() {
-	fmt.Println(tables.Cause().Error())
-} else {
-	fmt.Println(tables.Body())
-}
+	// Get all tables in the database
+	tables, response := client.Tables()
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
+	} else {
+		loggy.Infof("tables: %v", unify4g.JsonN(tables))
+	}
 
-// Get metadata for a specific table
-tableMetadata := client.TableKeys("my_table")
-if tableMetadata.IsError() {
-	fmt.Println(tableMetadata.Cause().Error())
-} else {
-	fmt.Println(tableMetadata.Body())
-}
+	// Get metadata for a specific table
+	table_keys, response := client.TableKeys("my_table")
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
+	} else {
+		loggy.Infof("table keys: %v", unify4g.JsonN(table_keys))
+	}
 
-// Get DDL for a specific table
-tableDDL := client.TableDefPlus("my_table")
-if tableDDL.IsError() {
-	fmt.Println(tableDDL.Cause().Error())
-} else {
-	fmt.Println(tableDDL.Body())
-}
+	// Get DDL for a specific table
+	ddl, response := client.TableDefPlus("my_table")
+	if response.IsError() {
+		loggy.Errorf("error: %v", response.Cause().Error())
+	} else {
+		loggy.Infof("table definition: %v", unify4g.JsonN(ddl))
+	}
 ```
 
 #### Execute Custom Queries
@@ -157,7 +157,7 @@ client.SetOn(func(response wrapify.R) {
     if response.IsSuccess() {
         fmt.Println("Connection status updated:", response.Message())
     } else {
-        fmt.Println("Connection error:", response.Cause().Error())
+        fmt.Println("Connection error:", response.Error())
     }
 })
 ```
