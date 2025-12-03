@@ -385,7 +385,7 @@ func (d *Datasource) SetWrap(value wrapify.R) *Datasource {
 func (d *Datasource) OnEmit(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.emit = fnc
+	d.on_reconnect = fnc
 	return d
 }
 
@@ -398,7 +398,7 @@ func (d *Datasource) OnEmit(fnc func(response wrapify.R)) *Datasource {
 func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, replicator *Datasource)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.emitChain = fnc
+	d.on_reconnect_chain = fnc
 	return d
 }
 
