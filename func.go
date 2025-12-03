@@ -619,10 +619,17 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysMeta, response wra
 // Returns:
 //   - A wrapify.R instance that encapsulates either the retrieved column metadata or an error message,
 //     along with additional metadata (e.g., the total count of columns).
-func (d *Datasource) ColsSpec(table string) wrapify.R {
+func (d *Datasource) ColsSpec(table string) (cols []ColsSpecMeta, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return cols, d.Wrap()
 	}
+
+	if isEmpty(table) {
+		response := wrapify.WrapBadRequest("Table name is required", cols).BindCause()
+		d.notify(response.Reply())
+		return cols, response.Reply()
+	}
+
 	s := `
 		SELECT
 			column_name,
@@ -637,25 +644,33 @@ func (d *Datasource) ColsSpec(table string) wrapify.R {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return cols, response.Reply()
 	}
 	defer rows.Close()
-	var results []ColsSpecMeta
+
 	for rows.Next() {
 		var m ColsSpecMeta
 		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
 			d.notify(response.Reply())
-			return response.Reply()
+			return cols, response.Reply()
 		}
-		results = append(results, m)
+		cols = append(cols, m)
 	}
+
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return cols, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), results).WithTotal(len(results)).Reply()
+
+	if len(cols) == 0 {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), cols).BindCause()
+		d.notify(response.Reply())
+		return cols, response.Reply()
+	}
+
+	return cols, wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), cols).WithTotal(len(cols)).Reply()
 }
 
 // TablesByCols searches for tables that contain ALL specified columns.
