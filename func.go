@@ -112,16 +112,16 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
 		return procedures, response.Reply()
 	}
 
 	if len(procedures) == 0 {
 		response := wrapify.WrapNotFound("No procedures found", procedures).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
 		return procedures, response.Reply()
 	}
-
+	d.dispatch_event(EventProcedureListing, EventLevelSuccess, response.Reply())
 	return procedures, wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
 }
 
@@ -159,7 +159,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", fsm).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
@@ -180,16 +180,17 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), fsm).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
 	if len(fsm) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), fsm).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
+	d.dispatch_event(EventFunctionMetadata, EventLevelSuccess, response.Reply())
 	return fsm, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
 }
 
@@ -221,23 +222,24 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", def).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&def)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), def).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	if isEmpty(def) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), def).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
+	d.dispatch_event(EventFunctionDefinition, EventLevelSuccess, response.Reply())
 	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
 }
 
@@ -272,7 +274,7 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	}
 	if isEmpty(procedure) {
 		response := wrapify.WrapBadRequest("Procedure name is required", def).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
@@ -287,16 +289,17 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	err := d.Conn().QueryRow(query, procedure).Scan(&def)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	if isEmpty(def) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Procedure '%s' not found", procedure), def).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
+	d.dispatch_event(EventProcedureDefinition, EventLevelSuccess, response.Reply())
 	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
 }
 
@@ -327,7 +330,7 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -352,16 +355,17 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), ddl).
 			WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	if isEmpty(ddl) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), ddl).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
+	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
 	return ddl, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).WithTotal(1).Reply()
 }
 
@@ -397,7 +401,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -455,13 +459,13 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), tableDDL).
 			WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	if isEmpty(tableDDL) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), tableDDL).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -514,10 +518,11 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 
 	if isEmpty(fullDDL) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), fullDDL).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
+	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
 	return fullDDL, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).WithTotal(1).Reply()
 }
 
@@ -549,7 +554,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", keys).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
@@ -581,7 +586,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		var m TableKeysDef
 		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
 			return keys, response.Reply()
 		}
 		keys = append(keys, m)
@@ -589,16 +594,17 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
 	if len(keys) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), keys).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
+	d.dispatch_event(EventTableKeysIndexes, EventLevelSuccess, response.Reply())
 	return keys, wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' keys and indexes metadata successfully", table), keys).WithTotal(len(keys)).Reply()
 }
 
@@ -628,7 +634,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", cols).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
@@ -645,7 +651,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 	rows, err := d.Conn().Query(s, table)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 	defer rows.Close()
@@ -654,7 +660,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 		var m ColsSpec
 		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
 			return cols, response.Reply()
 		}
 		cols = append(cols, m)
@@ -662,16 +668,17 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
 	if len(cols) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), cols).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
+	d.dispatch_event(EventTableColsSpec, EventLevelSuccess, response.Reply())
 	return cols, wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), cols).WithTotal(len(cols)).Reply()
 }
 
@@ -694,7 +701,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -718,7 +725,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -731,7 +738,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -745,7 +752,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -754,10 +761,11 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("No tables found containing all specified columns '%v'", strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
+	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
 	return stats, wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) containing all %d specified column(s)", len(stats), len(columns)),
 		stats,
@@ -783,7 +791,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -805,7 +813,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("An error occurred while searching for tables with any columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -818,7 +826,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -832,7 +840,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -841,10 +849,11 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("No tables found containing any of the specified columns '%v'", strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
+	d.dispatch_event(EventTableSearchByAnyCols, EventLevelSuccess, response.Reply())
 	return stats, wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) containing at least one of %d specified column(s)", len(stats), len(columns)),
 		stats,
@@ -865,7 +874,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -888,7 +897,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("An error occurred while searching for tables with columns %v in schema '%s'", columns, schema),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -901,7 +910,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 				fmt.Sprintf("An error occurred while scanning results for columns %v in schema '%s'", columns, schema),
 				nil,
 			).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -915,7 +924,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("An error occurred while iterating results for columns %v in schema '%s'", columns, schema),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -924,10 +933,11 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("No tables found in schema '%s' containing all specified columns '%v'", schema, strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
+	d.dispatch_event(EventTablesByColsIn, EventLevelSuccess, response.Reply())
 	return stats, wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(stats), schema, len(columns)),
 		stats,
@@ -950,7 +960,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -974,7 +984,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -988,7 +998,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			// d.dispatch_event(response.Reply())
+			d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 
@@ -1009,7 +1019,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		// d.dispatch_event(response.Reply())
+		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1051,6 +1061,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 		}
 	}
 
+	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
 	return stats, wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(stats), fullMatchCount, len(columns)),
 		stats,
