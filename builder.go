@@ -395,7 +395,7 @@ func (d *Datasource) OnEmit(fnc func(response wrapify.R)) *Datasource {
 // and a pointer to the Datasource representing the replica connection (replicator), allowing external
 // components to implement custom logic for replica management. The updated Datasource instance is returned
 // to support method chaining.
-func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, replicator *Datasource)) *Datasource {
+func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, chain *Datasource)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.on_reconnect_chain = fnc
