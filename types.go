@@ -175,7 +175,7 @@ type Datasource struct {
 	// this function is triggered with the current status (encapsulated in wrapify.R) and a pointer to the Datasource
 	// representing the replica connection. This allows external components to implement replica-specific logic
 	// for tasks such as load balancing, monitoring, or failover handling independently of the primary connection.
-	on_reconnect_chain func(response wrapify.R, replicator *Datasource)
+	on_reconnect_chain func(response wrapify.R, chain *Datasource)
 
 	// event is an optional callback function used to propagate notifications for significant datasource events.
 	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,
