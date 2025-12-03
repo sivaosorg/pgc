@@ -259,7 +259,7 @@ func (d *Datasource) reconnect() error {
 // calling goroutine.
 func (d *Datasource) invoke(response wrapify.R) {
 	d.mu.RLock()
-	callback := d.on
+	callback := d.emit
 	d.mu.RUnlock()
 	if callback != nil {
 		go callback(response)
@@ -272,7 +272,7 @@ func (d *Datasource) invoke(response wrapify.R) {
 // such as replica failovers, reconnection attempts, or health updates, without blocking the calling goroutine.
 func (d *Datasource) invokeReplica(response wrapify.R, replicator *Datasource) {
 	d.mu.RLock()
-	callback := d.onReplica
+	callback := d.emitChain
 	d.mu.RUnlock()
 	if callback != nil {
 		go callback(response, replicator)

@@ -385,7 +385,7 @@ func (d *Datasource) SetWrap(value wrapify.R) *Datasource {
 func (d *Datasource) SetOn(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.on = fnc
+	d.emit = fnc
 	return d
 }
 
@@ -398,7 +398,7 @@ func (d *Datasource) SetOn(fnc func(response wrapify.R)) *Datasource {
 func (d *Datasource) SetOnReplica(fnc func(response wrapify.R, replicator *Datasource)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.onReplica = fnc
+	d.emitChain = fnc
 	return d
 }
 
