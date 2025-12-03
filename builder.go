@@ -439,6 +439,20 @@ func (t *Transaction) IsActivated() bool {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Getter Event Keys
+//_______________________________________________________________________
+
+// String returns the string representation of the EventKey.
+func (e EventKey) String() string {
+	return string(e)
+}
+
+// IsValid checks if the EventKey is not empty.
+func (e EventKey) IsValid() bool {
+	return isNotEmpty(string(e))
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Bind Configs
 //_______________________________________________________________________
 
