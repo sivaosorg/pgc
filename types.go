@@ -177,11 +177,11 @@ type Datasource struct {
 	// for tasks such as load balancing, monitoring, or failover handling independently of the primary connection.
 	emitChain func(response wrapify.R, replicator *Datasource)
 
-	// notifier is an optional callback function used to propagate notifications for significant datasource events.
+	// event is an optional callback function used to propagate notifications for significant datasource events.
 	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,
 	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
-	notifier func(response wrapify.R)
+	event func(response wrapify.R)
 }
 
 type Transaction struct {

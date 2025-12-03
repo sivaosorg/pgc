@@ -410,7 +410,7 @@ func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, replicator *Dataso
 func (d *Datasource) SetNotifier(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.notifier = fnc
+	d.event = fnc
 	return d
 }
 
