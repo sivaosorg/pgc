@@ -25,18 +25,17 @@ import (
 //
 // Returns:
 //   - A wrapify.R instance encapsulating either the successful retrieval of table names or the error encountered.
-func (d *Datasource) Tables() wrapify.R {
+func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return tables, d.Wrap()
 	}
-	var tables []string
 	err := d.Conn().Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return tables, response.Reply()
 	}
-	return wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
+	return tables, wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
 }
 
 // Functions retrieves the names of all stored functions from the "public" schema of the connected PostgreSQL database.
