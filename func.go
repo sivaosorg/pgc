@@ -319,11 +319,16 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 // Returns:
 //   - A wrapify.R instance that encapsulates either the generated DDL statement (on success) or an error message
 //     (on failure), along with additional metadata.
-func (d *Datasource) TableDef(table string) wrapify.R {
+func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return ddl, d.Wrap()
 	}
-	var ddl string
+	if isEmpty(table) {
+		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
+		d.notify(response.Reply())
+		return ddl, response.Reply()
+	}
+
 	query := `
 		SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
 			array_to_string(
@@ -346,11 +351,16 @@ func (d *Datasource) TableDef(table string) wrapify.R {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), ddl).
 			WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return ddl, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).
-		WithTotal(1).
-		Reply()
+
+	if isEmpty(ddl) {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), ddl).BindCause()
+		d.notify(response.Reply())
+		return ddl, response.Reply()
+	}
+
+	return ddl, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).WithTotal(1).Reply()
 }
 
 // TableDefPlus generates a comprehensive Data Definition Language (DDL) script for the specified table,
