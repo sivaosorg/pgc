@@ -274,7 +274,15 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 		return def, response.Reply()
 	}
 
-	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&def)
+	// Use regprocedure for procedures and verify it's actually a procedure (prokind = 'p')
+	query := `
+	SELECT pg_get_functiondef(p.oid)
+	FROM pg_proc p
+	JOIN pg_namespace n ON p.pronamespace = n.oid
+	WHERE p. proname = $1 AND p.prokind = 'p'
+	LIMIT 1
+	`
+	err := d.Conn().QueryRow(query, procedure).Scan(&def)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
 		d.notify(response.Reply())
