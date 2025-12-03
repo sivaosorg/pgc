@@ -541,10 +541,16 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 //
 // Returns:
 //   - A wrapify.R instance encapsulating either the retrieved metadata (on success) or an error message (on failure).
-func (d *Datasource) TableKeys(table string) wrapify.R {
+func (d *Datasource) TableKeys(table string) (keys []TableKeysMeta, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return keys, d.Wrap()
 	}
+	if isEmpty(table) {
+		response := wrapify.WrapBadRequest("Table name is required", keys).BindCause()
+		d.notify(response.Reply())
+		return keys, response.Reply()
+	}
+
 	s := `
 		SELECT conname AS c_name, 'Primary Key' AS type, '' as descriptor
 		FROM pg_constraint
@@ -565,25 +571,33 @@ func (d *Datasource) TableKeys(table string) wrapify.R {
 	rows, err := d.Conn().Query(s, table)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the table '%s' metadata", table), nil).WithErrSck(err)
-		return response.Reply()
+		return keys, response.Reply()
 	}
 	defer rows.Close()
-	var results []TableKeysMeta
+
 	for rows.Next() {
 		var m TableKeysMeta
 		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
 			d.notify(response.Reply())
-			return response.Reply()
+			return keys, response.Reply()
 		}
-		results = append(results, m)
+		keys = append(keys, m)
 	}
+
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return keys, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' metadata successfully", table), results).WithTotal(len(results)).Reply()
+
+	if len(keys) == 0 {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), keys).BindCause()
+		d.notify(response.Reply())
+		return keys, response.Reply()
+	}
+
+	return keys, wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' keys and indexes metadata successfully", table), keys).WithTotal(len(keys)).Reply()
 }
 
 // ColsSpec retrieves metadata for all columns of the specified table from the PostgreSQL database.
