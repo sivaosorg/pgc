@@ -86,18 +86,17 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates either the list of procedure names or an error message, along with metadata
 //     such as the total count of procedures.
-func (d *Datasource) Procedures() wrapify.R {
+func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return procedures, d.Wrap()
 	}
-	var procedures []string
 	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return procedures, response.Reply()
 	}
-	return wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
+	return procedures, wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
 }
 
 // FuncSpec retrieves detailed metadata for a specified function from the PostgreSQL database.
