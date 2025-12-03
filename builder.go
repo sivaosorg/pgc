@@ -402,12 +402,12 @@ func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, replicator *Dataso
 	return d
 }
 
-// SetNotifier sets the callback function that is invoked for significant datasource events,
+// OnEvent sets the callback function that is invoked for significant datasource events,
 // such as reconnection attempts, keepalive signals, or other diagnostic updates.
 // This function stores the provided notifier, which can be used to asynchronously notify
 // external components of changes in the connection's status, and returns the updated Datasource instance
 // to support method chaining.
-func (d *Datasource) SetNotifier(fnc func(response wrapify.R)) *Datasource {
+func (d *Datasource) OnEvent(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.event = fnc
