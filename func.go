@@ -61,12 +61,20 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	if !d.IsConnected() {
 		return functions, d.Wrap()
 	}
+
 	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
 		d.notify(response.Reply())
 		return functions, response.Reply()
 	}
+
+	if len(functions) == 0 {
+		response := wrapify.WrapNotFound("No functions found", functions).BindCause()
+		d.notify(response.Reply())
+		return functions, response.Reply()
+	}
+
 	return functions, wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
 }
 
