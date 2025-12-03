@@ -190,7 +190,7 @@ type Datasource struct {
 	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,
 	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
-	on_event func(event EventKey, response wrapify.R)
+	on_event func(event EventKey, level EventLevel, response wrapify.R)
 }
 
 type Transaction struct {

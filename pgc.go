@@ -98,7 +98,7 @@ func NewClient(conf settings) *Datasource {
 func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	if !d.IsConnected() {
 		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).BindCause().WithHeader(wrapify.ServiceUnavailable).Reply()
-		d.dispatch_event(EventConnClose, response)
+		d.dispatch_event(EventConnClose, EventLevelError, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -108,12 +108,12 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		return t
 	}
 
-	d.dispatch_event(EventTxBegin, wrapify.WrapProcessing("Starting transaction", nil).WithHeader(wrapify.Processing).Reply())
+	d.dispatch_event(EventTxBegin, EventLevelInfo, wrapify.WrapProcessing("Starting transaction", nil).WithHeader(wrapify.Processing).Reply())
 
 	tx, err := d.Conn().BeginTxx(ctx, nil)
 	if err != nil {
 		response := wrapify.WrapInternalServerError("Failed to start transaction", nil).WithHeader(wrapify.InternalServerError).WithErrSck(err).Reply()
-		d.dispatch_event(EventTxStartedAbort, response)
+		d.dispatch_event(EventTxStartedAbort, EventLevelError, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -129,7 +129,7 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		active: true,
 		wrap:   response,
 	}
-	d.dispatch_event(EventTxStarted, response)
+	d.dispatch_event(EventTxStarted, EventLevelSuccess, response)
 	return t
 }
 
@@ -290,11 +290,11 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 // invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
 // to dispatch_event external components of significant events (e.g., transaction starts, commits, rollbacks)
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
-func (d *Datasource) dispatch_event(event EventKey, response wrapify.R) {
+func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
 	d.mu.RLock()
 	callback := d.on_event
 	d.mu.RUnlock()
 	if callback != nil {
-		go callback(event, response)
+		go callback(event, level, response)
 	}
 }
