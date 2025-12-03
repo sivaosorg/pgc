@@ -29,12 +29,20 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 	if !d.IsConnected() {
 		return tables, d.Wrap()
 	}
+
 	err := d.Conn().Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
 		d.notify(response.Reply())
 		return tables, response.Reply()
 	}
+
+	if len(tables) == 0 {
+		response := wrapify.WrapNotFound("No tables found", tables).BindCause()
+		d.notify(response.Reply())
+		return tables, response.Reply()
+	}
+
 	return tables, wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
 }
 
