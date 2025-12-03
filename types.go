@@ -282,7 +282,7 @@ type TableColsSpec struct {
 	MatchedCount   int      `json:"matched_count"`
 }
 
-// FindTablesWithColumnsDetailed searches for tables and returns detailed information about column matches.
+// TablesByColsPlus searches for tables and returns detailed information about column matches.
 //
 // This function provides comprehensive information including which columns were found,
 // which were missing, and detailed metadata for each matched column.
