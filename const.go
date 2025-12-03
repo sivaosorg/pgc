@@ -27,3 +27,34 @@ const (
 	defaultPingInterval = 30 * time.Second
 	defaultTimeFormat   = "2006-01-02 15:04:05.000000"
 )
+
+// EventKey represents a type for event keys used in the package.
+// It is defined as a string type to provide better type safety and clarity when dealing with event keys.
+// This type can be used to define constants for various event keys that are relevant to the package's functionality.
+const (
+	// Transaction events
+	EventTxBegin  = EventKey("event_tx_begin")
+	EventTxCommit = EventKey("event_tx_commit")
+	EventTxAbort  = EventKey("event_tx_rollback")
+
+	// Function events
+	EventFunctionListing    = EventKey("event_function_listing")
+	EventFunctionMetadata   = EventKey("event_function_metadata")
+	EventFunctionDefinition = EventKey("event_function_definition")
+
+	// Procedure events
+	EventProcedureListing    = EventKey("event_procedure_listing")
+	EventProcedureDefinition = EventKey("event_procedure_definition")
+
+	// Table events
+	EventTableDefinition      = EventKey("event_table_definition")
+	EventTableKeysIndexes     = EventKey("event_table_keys_indexes")
+	EventTableSearchByCols    = EventKey("event_table_search_by_cols")
+	EventTableSearchByAnyCols = EventKey("event_table_search_by_any_cols")
+
+	// Connection events
+	EventConnOpen  = EventKey("event_conn_open")
+	EventConnClose = EventKey("event_conn_close")
+	EventConnRetry = EventKey("event_conn_retry")
+	EventConnPing  = EventKey("event_conn_ping")
+)

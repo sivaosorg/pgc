@@ -150,6 +150,11 @@ type settings struct {
 // SslmodeVarious represents the SSL mode used for connecting to the database.
 type SslmodeVarious string
 
+// EventKey represents a unique identifier for events dispatched by the Datasource.
+// It is used to classify and identify specific operations or notifications
+// when the dispatch_event callback is invoked.
+type EventKey string
+
 // Datasource encapsulates the PostgreSQL connection and its associated configuration,
 // connection status, and event callback mechanism. It provides thread-safe access to its fields
 // and supports automatic keepalive and reconnection features.
