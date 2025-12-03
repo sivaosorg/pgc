@@ -33,9 +33,12 @@ const (
 // This type can be used to define constants for various event keys that are relevant to the package's functionality.
 const (
 	// Transaction events
-	EventTxBegin  = EventKey("event_tx_begin")
-	EventTxCommit = EventKey("event_tx_commit")
-	EventTxAbort  = EventKey("event_tx_rollback")
+	EventTxBegin           = EventKey("event_tx_begin")            // Transaction begin event
+	EventTxCommit          = EventKey("event_tx_commit")           // Transaction commit event
+	EventTxRollback        = EventKey("event_tx_rollback")         // Transaction rollback event
+	EventTxSavepointCreate = EventKey("event_tx_savepoint_create") // Transaction savepoint creation event
+	EventTxStarted         = EventKey("event_tx_started")          // Transaction started event
+	EventTxStartedAbort    = EventKey("event_tx_started_abort")    // Transaction started with abort event
 
 	// Function events
 	EventFunctionListing    = EventKey("event_function_listing")
@@ -47,6 +50,7 @@ const (
 	EventProcedureDefinition = EventKey("event_procedure_definition")
 
 	// Table events
+	EventTableListing         = EventKey("event_table_listing")
 	EventTableDefinition      = EventKey("event_table_definition")
 	EventTableKeysIndexes     = EventKey("event_table_keys_indexes")
 	EventTableSearchByCols    = EventKey("event_table_search_by_cols")

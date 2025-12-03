@@ -407,7 +407,7 @@ func (d *Datasource) OnReconnectChain(fnc func(response wrapify.R, chain *Dataso
 // This function stores the provided notifier, which can be used to asynchronously notify
 // external components of changes in the connection's status, and returns the updated Datasource instance
 // to support method chaining.
-func (d *Datasource) OnEvent(fnc func(response wrapify.R)) *Datasource {
+func (d *Datasource) OnEvent(fnc func(event EventKey, response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.on_event = fnc

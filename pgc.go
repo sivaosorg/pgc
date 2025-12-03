@@ -91,10 +91,14 @@ func NewClient(conf settings) *Datasource {
 	return datasource
 }
 
+// BeginTx starts a new database transaction within the context of the Datasource.
+// If the Datasource is not connected, it returns a Transaction instance with an appropriate
+// error response. Otherwise, it attempts to begin a transaction using the underlying
+// sqlx connection and returns a Transaction instance representing the active transaction.
 func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	if !d.IsConnected() {
-		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).WithHeader(wrapify.ServiceUnavailable).Reply()
-		d.dispatch_event(response)
+		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).BindCause().WithHeader(wrapify.ServiceUnavailable).Reply()
+		d.dispatch_event(EventConnClose, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -103,10 +107,13 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		}
 		return t
 	}
+
+	d.dispatch_event(EventTxBegin, wrapify.WrapProcessing("Starting transaction", nil).WithHeader(wrapify.Processing).Reply())
+
 	tx, err := d.Conn().BeginTxx(ctx, nil)
 	if err != nil {
 		response := wrapify.WrapInternalServerError("Failed to start transaction", nil).WithHeader(wrapify.InternalServerError).WithErrSck(err).Reply()
-		d.dispatch_event(response)
+		d.dispatch_event(EventTxStartedAbort, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -122,7 +129,7 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		active: true,
 		wrap:   response,
 	}
-	d.dispatch_event(response)
+	d.dispatch_event(EventTxStarted, response)
 	return t
 }
 
@@ -281,13 +288,13 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 
 // dispatch_event safely retrieves the registered notifier callback function and, if one is set,
 // invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
-// to dispatch_event external components of significant events (e.g., reconnection, keepalive updates)
+// to dispatch_event external components of significant events (e.g., transaction starts, commits, rollbacks)
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
-func (d *Datasource) dispatch_event(response wrapify.R) {
+func (d *Datasource) dispatch_event(event EventKey, response wrapify.R) {
 	d.mu.RLock()
 	callback := d.on_event
 	d.mu.RUnlock()
 	if callback != nil {
-		go callback(response)
+		go callback(event, response)
 	}
 }
