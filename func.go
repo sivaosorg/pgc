@@ -389,10 +389,16 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates the complete DDL script for the table (on success) or an error message
 //     (on failure), along with additional metadata.
-func (d *Datasource) TableDefPlus(table string) wrapify.R {
+func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return ddl, d.Wrap()
 	}
+	if isEmpty(table) {
+		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
+		d.notify(response.Reply())
+		return ddl, response.Reply()
+	}
+
 	// Retrieve the basic CREATE TABLE DDL from the system catalogs.
 	// For each column, the data type is mapped to an uppercase label with explicit adjustments:
 	//   - INTEGER, BIGINT, SMALLINT, REAL, and DOUBLE PRECISION are mapped to INT4, INT8, INT16, FLOAT32, and FLOAT64 respectively.
@@ -448,7 +454,13 @@ func (d *Datasource) TableDefPlus(table string) wrapify.R {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), tableDDL).
 			WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return ddl, response.Reply()
+	}
+
+	if isEmpty(tableDDL) {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), tableDDL).BindCause()
+		d.notify(response.Reply())
+		return ddl, response.Reply()
 	}
 
 	// Retrieve foreign key constraints DDL.
@@ -497,9 +509,14 @@ func (d *Datasource) TableDefPlus(table string) wrapify.R {
 	if isNotEmpty(indexes) {
 		fullDDL += "\n\n-- Indexes\n" + indexes + ";"
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).
-		WithTotal(1).
-		Reply()
+
+	if isEmpty(fullDDL) {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), fullDDL).BindCause()
+		d.notify(response.Reply())
+		return ddl, response.Reply()
+	}
+
+	return fullDDL, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).WithTotal(1).Reply()
 }
 
 // TableKeys retrieves metadata information for the specified table from the connected PostgreSQL database.
