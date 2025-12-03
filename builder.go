@@ -380,9 +380,9 @@ func (d *Datasource) SetWrap(value wrapify.R) *Datasource {
 	return d
 }
 
-// SetOn sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
+// OnEmit sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
 // and returns the updated Datasource for method chaining.
-func (d *Datasource) SetOn(fnc func(response wrapify.R)) *Datasource {
+func (d *Datasource) OnEmit(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.emit = fnc

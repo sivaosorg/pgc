@@ -153,7 +153,7 @@ for rows.Next() {
 You can register callbacks to handle connection events, such as reconnection attempts or keepalive updates:
 
 ```go
-client.SetOn(func(response wrapify.R) {
+client.OnEmit(func(response wrapify.R) {
     if response.IsSuccess() {
         fmt.Println("Connection status updated:", response.Message())
     } else {
