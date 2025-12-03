@@ -57,18 +57,17 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates either the list of function names or an error message,
 //     along with metadata such as the total count of functions.
-func (d *Datasource) Functions() wrapify.R {
+func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return functions, d.Wrap()
 	}
-	var functions []string
 	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return functions, response.Reply()
 	}
-	return wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
+	return functions, wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
 }
 
 // Procedures retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
