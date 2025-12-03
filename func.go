@@ -264,18 +264,30 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates either the procedure's complete definition or an error message,
 //     along with additional metadata such as the total count (1 in this case).
-func (d *Datasource) ProcDef(procedure string) wrapify.R {
+func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return def, d.Wrap()
 	}
-	var def string
+	if isEmpty(procedure) {
+		response := wrapify.WrapBadRequest("Procedure name is required", def).BindCause()
+		d.notify(response.Reply())
+		return def, response.Reply()
+	}
+
 	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", procedure).Scan(&def)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return def, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
+
+	if isEmpty(def) {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Procedure '%s' not found", procedure), def).BindCause()
+		d.notify(response.Reply())
+		return def, response.Reply()
+	}
+
+	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
 }
 
 // TableDef generates the Data Definition Language (DDL) statement for creating the specified table
