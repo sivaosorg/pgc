@@ -389,13 +389,13 @@ func (d *Datasource) OnEmit(fnc func(response wrapify.R)) *Datasource {
 	return d
 }
 
-// OnEmitChain sets the callback function that is invoked for events specific to replica connections,
+// OnReconnectChain sets the callback function that is invoked for events specific to replica connections,
 // such as replica failovers, reconnection attempts, or health status updates.
 // This function accepts a callback that receives both the current status (encapsulated in wrapify.R)
 // and a pointer to the Datasource representing the replica connection (replicator), allowing external
 // components to implement custom logic for replica management. The updated Datasource instance is returned
 // to support method chaining.
-func (d *Datasource) OnEmitChain(fnc func(response wrapify.R, chain *Datasource)) *Datasource {
+func (d *Datasource) OnReconnectChain(fnc func(response wrapify.R, chain *Datasource)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.on_reconnect_chain = fnc

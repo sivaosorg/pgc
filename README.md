@@ -239,7 +239,7 @@ func main() {
 			loggy.Errorf("root: %v, debug: %v, msg: %v", response.Cause().Error(), response.Debugging(), response.Message())
 		}
 	}
-	client.OnEmitChain(callback)
+	client.OnReconnectChain(callback)
 
 	// Get all tables in the database
 	ous, response := client.Tables()
@@ -324,7 +324,7 @@ func main() {
 			loggy.Errorf("root: %v, debug: %v, msg: %v", response.Cause().Error(), response.Debugging(), response.Message())
 		}
 	}
-	client.OnEmitChain(callback)
+	client.OnReconnectChain(callback)
 
 	// Since keepalive is false and no background goroutine is running,
 	// start a dummy goroutine that sleeps forever to avoid a runtime deadlock.
