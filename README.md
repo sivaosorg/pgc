@@ -282,7 +282,7 @@ import (
 )
 
 func main() {
-	conf := &pgc.Settings{}
+	conf := pgc.NewSettings()
 	conf.SetEnable(true).
 		SetHost("localhost").
 		SetPort(5432).
