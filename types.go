@@ -155,6 +155,10 @@ type SslmodeVarious string
 // when the dispatch_event callback is invoked.
 type EventKey string
 
+// EventLevel represents the severity level of an event.
+// It is used to indicate the importance or type of the event being dispatched.
+type EventLevel string
+
 // Datasource encapsulates the PostgreSQL connection and its associated configuration,
 // connection status, and event callback mechanism. It provides thread-safe access to its fields
 // and supports automatic keepalive and reconnection features.

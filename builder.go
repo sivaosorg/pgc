@@ -453,6 +453,40 @@ func (e EventKey) IsValid() bool {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Getter Event Level
+//_______________________________________________________________________
+
+// String returns the string representation of the EventLevel.
+func (l EventLevel) String() string {
+	return string(l)
+}
+
+// IsInfo checks if the level is info.
+func (l EventLevel) IsInfo() bool {
+	return l == EventLevelInfo
+}
+
+// IsError checks if the level is error.
+func (l EventLevel) IsError() bool {
+	return l == EventLevelError
+}
+
+// IsWarn checks if the level is warn.
+func (l EventLevel) IsWarn() bool {
+	return l == EventLevelWarn
+}
+
+// IsDebug checks if the level is debug.
+func (l EventLevel) IsDebug() bool {
+	return l == EventLevelDebug
+}
+
+// IsSuccess checks if the level is success.
+func (l EventLevel) IsSuccess() bool {
+	return l == EventLevelSuccess
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Bind Configs
 //_______________________________________________________________________
 

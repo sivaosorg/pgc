@@ -62,3 +62,14 @@ const (
 	EventConnRetry = EventKey("event_conn_retry")
 	EventConnPing  = EventKey("event_conn_ping")
 )
+
+// EventLevel represents the severity level of an event.
+// It is defined as a string type to provide better type safety and clarity when dealing with event levels.
+// This type can be used to define constants for various event levels that indicate the importance or severity of events.
+const (
+	EventLevelInfo    = EventLevel("info")    // Info event level
+	EventLevelError   = EventLevel("error")   // Error event level
+	EventLevelWarn    = EventLevel("warn")    // Warning event level
+	EventLevelDebug   = EventLevel("debug")   // Debug event level
+	EventLevelSuccess = EventLevel("success") // Success event level
+)
