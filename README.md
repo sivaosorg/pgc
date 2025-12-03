@@ -49,7 +49,7 @@ import "github.com/sivaosorg/pgc"
 You can configure the PostgreSQL client using the `Settings` struct. Here's an example configuration:
 
 ```go
-conf := &pgc.Settings{}
+conf := pgc.NewSettings()
 conf.SetEnable(true). // Enables or disables the Postgres connection.
     SetDebug(true). // Turns on/off debugging mode for more verbose logging.
     SetHost("localhost"). // The hostname or IP address of the PostgreSQL server.

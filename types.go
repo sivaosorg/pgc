@@ -51,7 +51,7 @@ type WConf struct {
 	Schema            string        `yaml:"schema"`             // Default database schema to use.
 }
 
-// Settings represents the runtime configuration for the PostgreSQL connection.
+// settings represents the runtime configuration for the PostgreSQL connection.
 //
 // Fields:
 //   - Enabled:         Indicates whether the Postgres connection is enabled.
@@ -72,7 +72,7 @@ type WConf struct {
 //   - ConnectionStrings: Full connection string example; alternative to specifying individual connection parameters.
 //   - Optional:          Set to true if the connection is optional (won't cause the application to fail if unavailable).
 //   - Schema:            Default database schema to use.
-type Settings struct {
+type settings struct {
 	enabled   bool
 	debugging bool
 
@@ -157,7 +157,7 @@ type Datasource struct {
 	// A read-write mutex that ensures safe concurrent access to the Datasource fields.
 	mu sync.RWMutex
 	// An instance of Settings containing all the configuration parameters for the PostgreSQL connection.
-	conf Settings
+	conf settings
 	// A wrapify.R instance that holds the current connection status, error messages, and debugging information.
 	wrap wrapify.R
 	// A pointer to an sqlx.DB object representing the active connection to the PostgreSQL database.

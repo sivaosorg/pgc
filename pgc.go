@@ -12,8 +12,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func NewSettings() *Settings {
-	return &Settings{}
+// NewSettings initializes and returns a pointer to a new settings instance
+// with default values pre-configured for PostgreSQL connections.
+func NewSettings() *settings {
+	return &settings{}
 }
 
 // NewClient creates and returns a fully configured Datasource instance for PostgreSQL based on
@@ -24,7 +26,7 @@ func NewSettings() *Settings {
 //
 // Returns:
 //   - A pointer to a Datasource instance that encapsulates the PostgreSQL connection and its configuration.
-func NewClient(conf Settings) *Datasource {
+func NewClient(conf settings) *Datasource {
 	datasource := &Datasource{
 		conf: conf,
 	}

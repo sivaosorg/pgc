@@ -15,105 +15,105 @@ import (
 
 // IsEnabled returns true if the configuration is enabled, indicating that
 // a connection to PostgreSQL should be attempted.
-func (c *Settings) IsEnabled() bool {
+func (c *settings) IsEnabled() bool {
 	return c.enabled
 }
 
 // IsDebugging returns true if debugging is enabled in the configuration,
 // which may allow more verbose logging.
-func (c *Settings) IsDebugging() bool {
+func (c *settings) IsDebugging() bool {
 	return c.debugging
 }
 
 // Host returns the hostname or IP address specified in the configuration.
-func (c *Settings) Host() string {
+func (c *settings) Host() string {
 	return c.host
 }
 
 // Port returns the port number on which the PostgreSQL server is expected to listen.
-func (c *Settings) Port() int {
+func (c *settings) Port() int {
 	return c.port
 }
 
 // User returns the username used for authenticating with the PostgreSQL database.
-func (c *Settings) User() string {
+func (c *settings) User() string {
 	return c.user
 }
 
 // Database returns the name of the PostgreSQL database to connect to.
-func (c *Settings) Database() string {
+func (c *settings) Database() string {
 	return c.database
 }
 
 // SslMode returns the SSL mode (e.g., disable, require, verify-ca, verify-full) used for the connection.
-func (c *Settings) SslMode() string {
+func (c *settings) SslMode() string {
 	return c.sslmode
 }
 
 // SslCert returns the path to the SSL client certificate file.
-func (c *Settings) SslCert() string {
+func (c *settings) SslCert() string {
 	return c.sslcert
 }
 
 // SslKey returns the path to the SSL client key file.
-func (c *Settings) SslKey() string {
+func (c *settings) SslKey() string {
 	return c.sslkey
 }
 
 // SslRootCert returns the path to the SSL root certificate file used for server certificate verification.
-func (c *Settings) SslRootCert() string {
+func (c *settings) SslRootCert() string {
 	return c.sslrootcert
 }
 
 // ConnTimeout returns the maximum duration to wait when establishing a connection.
-func (c *Settings) ConnTimeout() time.Duration {
+func (c *settings) ConnTimeout() time.Duration {
 	return c.connTimeout
 }
 
 // Application returns the application name configured for the PostgreSQL connection.
-func (c *Settings) Application() string {
+func (c *settings) Application() string {
 	return c.application
 }
 
 // MaxOpenConn returns the maximum number of open connections allowed to the database.
-func (c *Settings) MaxOpenConn() int {
+func (c *settings) MaxOpenConn() int {
 	return c.maxOpenConn
 }
 
 // MaxIdleConn returns the maximum number of idle connections maintained in the connection pool.
-func (c *Settings) MaxIdleConn() int {
+func (c *settings) MaxIdleConn() int {
 	return c.maxIdleConn
 }
 
 // ConnMaxLifetime returns the maximum duration a connection may be reused before it is closed.
-func (c *Settings) ConnMaxLifetime() time.Duration {
+func (c *settings) ConnMaxLifetime() time.Duration {
 	return c.connMaxLifetime
 }
 
 // PingInterval returns the interval at which the database connection is pinged.
 // This value is used by the keepalive mechanism.
-func (c *Settings) PingInterval() time.Duration {
+func (c *settings) PingInterval() time.Duration {
 	return c.pingInterval
 }
 
 // IsSsl returns true if the SSL mode is enabled (i.e., not "disable"), false otherwise.
-func (c *Settings) IsSsl() bool {
+func (c *settings) IsSsl() bool {
 	return !strings.EqualFold(c.sslmode, "disable")
 }
 
 // IsConnTimeout returns true if a non-zero connection timeout is specified.
-func (c *Settings) IsConnTimeout() bool {
+func (c *settings) IsConnTimeout() bool {
 	return c.connTimeout != 0
 }
 
 // IsPingInterval returns true if keepalive is enabled and a ping interval is specified.
-func (c *Settings) IsPingInterval() bool {
+func (c *settings) IsPingInterval() bool {
 	return c.keepalive && c.pingInterval != 0
 }
 
 // ConnString returns a concise connection string in the format: "user@host:port/database".
 // This is mainly used for display or logging purposes.
-func (c *Settings) ConnString() string {
+func (c *settings) ConnString() string {
 	if isNotEmpty(c.connectionStrings) {
 		return c.connectionStrings
 	}
@@ -124,7 +124,7 @@ func (c *Settings) ConnString() string {
 
 // String returns the full PostgreSQL connection string with all parameters.
 // If safe is true, the password is masked to protect sensitive information.
-func (c *Settings) String(safe bool) string {
+func (c *settings) String(safe bool) string {
 	if isNotEmpty(c.connectionStrings) {
 		return c.connectionStrings
 	}
@@ -190,7 +190,7 @@ func (d *Datasource) Wrap() wrapify.R {
 }
 
 // Conf returns the Settings configuration associated with the Datasource.
-func (d *Datasource) Conf() Settings {
+func (d *Datasource) Conf() settings {
 	return d.conf
 }
 
@@ -206,116 +206,116 @@ func (d *Datasource) IsConnected() bool {
 
 // SetEnable sets the enabled flag in the configuration and returns the updated Settings,
 // allowing for method chaining.
-func (c *Settings) SetEnable(value bool) *Settings {
+func (c *settings) SetEnable(value bool) *settings {
 	c.enabled = value
 	return c
 }
 
 // SetDebug sets the debugging flag in the configuration and returns the updated Settings.
-func (c *Settings) SetDebug(value bool) *Settings {
+func (c *settings) SetDebug(value bool) *settings {
 	c.debugging = value
 	return c
 }
 
 // SetHost sets the hostname or IP address for the database connection and returns the updated Settings.
-func (c *Settings) SetHost(value string) *Settings {
+func (c *settings) SetHost(value string) *settings {
 	c.host = value
 	return c
 }
 
 // SetPort sets the port number for the database connection and returns the updated Settings.
-func (c *Settings) SetPort(value int) *Settings {
+func (c *settings) SetPort(value int) *settings {
 	c.port = value
 	return c
 }
 
 // SetUser sets the username for authenticating with the database and returns the updated Settings.
-func (c *Settings) SetUser(value string) *Settings {
+func (c *settings) SetUser(value string) *settings {
 	c.user = value
 	return c
 }
 
 // SetPassword sets the password for the database connection and returns the updated Settings.
-func (c *Settings) SetPassword(value string) *Settings {
+func (c *settings) SetPassword(value string) *settings {
 	c.password = value
 	return c
 }
 
 // SetDatabase sets the target database name for the connection and returns the updated Settings.
-func (c *Settings) SetDatabase(value string) *Settings {
+func (c *settings) SetDatabase(value string) *settings {
 	c.database = value
 	return c
 }
 
 // SetSslMode sets the SSL mode (as a string) for the connection and returns the updated Settings.
-func (c *Settings) SetSslMode(value string) *Settings {
+func (c *settings) SetSslMode(value string) *settings {
 	c.sslmode = value
 	return c
 }
 
 // SetSslModeVarious sets the SSL mode using the SslmodeVarious type and returns the updated Settings.
-func (c *Settings) SetSslModeVarious(value SslmodeVarious) *Settings {
+func (c *settings) SetSslModeVarious(value SslmodeVarious) *settings {
 	c.sslmode = string(value)
 	return c
 }
 
 // SetSslCert sets the path to the SSL client certificate and returns the updated Settings.
-func (c *Settings) SetSslCert(value string) *Settings {
+func (c *settings) SetSslCert(value string) *settings {
 	c.sslcert = value
 	return c
 }
 
 // SetSslKey sets the path to the SSL client key and returns the updated Settings.
-func (c *Settings) SetSslKey(value string) *Settings {
+func (c *settings) SetSslKey(value string) *settings {
 	c.sslkey = value
 	return c
 }
 
 // SetSslRootCert sets the path to the SSL root certificate and returns the updated Settings.
-func (c *Settings) SetSslRootCert(value string) *Settings {
+func (c *settings) SetSslRootCert(value string) *settings {
 	c.sslrootcert = value
 	return c
 }
 
 // SetConnTimeout sets the connection timeout duration and returns the updated Settings.
-func (c *Settings) SetConnTimeout(value time.Duration) *Settings {
+func (c *settings) SetConnTimeout(value time.Duration) *settings {
 	c.connTimeout = value
 	return c
 }
 
 // SetApplication sets the application name for the connection and returns the updated Settings.
-func (c *Settings) SetApplication(value string) *Settings {
+func (c *settings) SetApplication(value string) *settings {
 	c.application = value
 	return c
 }
 
 // SetMaxOpenConn sets the maximum number of open connections and returns the updated Settings.
-func (c *Settings) SetMaxOpenConn(value int) *Settings {
+func (c *settings) SetMaxOpenConn(value int) *settings {
 	c.maxOpenConn = value
 	return c
 }
 
 // SetMaxIdleConn sets the maximum number of idle connections and returns the updated Settings.
-func (c *Settings) SetMaxIdleConn(value int) *Settings {
+func (c *settings) SetMaxIdleConn(value int) *settings {
 	c.maxIdleConn = value
 	return c
 }
 
 // SetConnMaxLifetime sets the maximum lifetime for a connection and returns the updated Settings.
-func (c *Settings) SetConnMaxLifetime(value time.Duration) *Settings {
+func (c *settings) SetConnMaxLifetime(value time.Duration) *settings {
 	c.connMaxLifetime = value
 	return c
 }
 
 // SetPingInterval sets the interval at which the connection is pinged for keepalive
 // and returns the updated Settings.
-func (c *Settings) SetPingInterval(value time.Duration) *Settings {
+func (c *settings) SetPingInterval(value time.Duration) *settings {
 	c.pingInterval = value
 	return c
 }
 
 // SetKeepalive enables or disables the automatic keepalive mechanism and returns the updated Settings.
-func (c *Settings) SetKeepalive(value bool) *Settings {
+func (c *settings) SetKeepalive(value bool) *settings {
 	c.keepalive = value
 	return c
 }
@@ -327,7 +327,7 @@ func (c *Settings) SetKeepalive(value bool) *Settings {
 //
 // Returns:
 //   - A pointer to the updated Settings instance to allow method chaining.
-func (c *Settings) SetConnectionStrings(value string) *Settings {
+func (c *settings) SetConnectionStrings(value string) *settings {
 	c.connectionStrings = value
 	return c
 }
@@ -340,7 +340,7 @@ func (c *Settings) SetConnectionStrings(value string) *Settings {
 //
 // Returns:
 //   - A pointer to the updated Settings instance to allow method chaining.
-func (c *Settings) SetSchema(value string) *Settings {
+func (c *settings) SetSchema(value string) *settings {
 	c.schema = value
 	return c
 }
@@ -353,7 +353,7 @@ func (c *Settings) SetSchema(value string) *Settings {
 //
 // Returns:
 //   - A pointer to the updated Settings instance to allow method chaining.
-func (c *Settings) SetOptions(value bool) *Settings {
+func (c *settings) SetOptions(value bool) *settings {
 	c.optional = value
 	return c
 }
@@ -444,11 +444,11 @@ func (t *Transaction) IsActivated() bool {
 
 // Bind converts a WConf (wrapper configuration loaded from YAML)
 // into an Settings (runtime configuration) instance by mapping each field.
-func Bind(c *WConf) *Settings {
+func Bind(c *WConf) *settings {
 	if c == nil {
-		return &Settings{}
+		return &settings{}
 	}
-	conf := &Settings{}
+	conf := &settings{}
 	conf.
 		SetEnable(c.IsEnabled).
 		SetDebug(c.IsDebugging).
