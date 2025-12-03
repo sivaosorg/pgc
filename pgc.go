@@ -94,7 +94,7 @@ func NewClient(conf settings) *Datasource {
 func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	if !d.IsConnected() {
 		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).WithHeader(wrapify.ServiceUnavailable).Reply()
-		d.onEvent(response)
+		d.dispatch_event(response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -106,7 +106,7 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	tx, err := d.Conn().BeginTxx(ctx, nil)
 	if err != nil {
 		response := wrapify.WrapInternalServerError("Failed to start transaction", nil).WithHeader(wrapify.InternalServerError).WithErrSck(err).Reply()
-		d.onEvent(response)
+		d.dispatch_event(response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -122,7 +122,7 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		active: true,
 		wrap:   response,
 	}
-	d.onEvent(response)
+	d.dispatch_event(response)
 	return t
 }
 
@@ -279,13 +279,13 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 	}
 }
 
-// onEvent safely retrieves the registered notifier callback function and, if one is set,
+// dispatch_event safely retrieves the registered notifier callback function and, if one is set,
 // invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
-// to onEvent external components of significant events (e.g., reconnection, keepalive updates)
+// to dispatch_event external components of significant events (e.g., reconnection, keepalive updates)
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
-func (d *Datasource) onEvent(response wrapify.R) {
+func (d *Datasource) dispatch_event(response wrapify.R) {
 	d.mu.RLock()
-	callback := d.event
+	callback := d.on_event
 	d.mu.RUnlock()
 	if callback != nil {
 		go callback(response)

@@ -177,11 +177,11 @@ type Datasource struct {
 	// for tasks such as load balancing, monitoring, or failover handling independently of the primary connection.
 	on_reconnect_chain func(response wrapify.R, chain *Datasource)
 
-	// event is an optional callback function used to propagate notifications for significant datasource events.
+	// on_event is an optional callback function used to propagate notifications for significant datasource events.
 	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,
 	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
-	event func(response wrapify.R)
+	on_event func(response wrapify.R)
 }
 
 type Transaction struct {

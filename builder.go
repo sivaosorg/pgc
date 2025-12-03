@@ -410,7 +410,7 @@ func (d *Datasource) OnReconnectChain(fnc func(response wrapify.R, chain *Dataso
 func (d *Datasource) OnEvent(fnc func(response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.event = fnc
+	d.on_event = fnc
 	return d
 }
 
