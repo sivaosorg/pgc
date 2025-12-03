@@ -213,18 +213,30 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncSpecMeta, response wra
 // Returns:
 //   - A wrapify.R instance that encapsulates either the function's complete definition or an error message,
 //     along with additional metadata.
-func (d *Datasource) FuncDef(function string) wrapify.R {
+func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return def, d.Wrap()
 	}
-	var def string
+	if isEmpty(function) {
+		response := wrapify.WrapBadRequest("Function name is required", def).BindCause()
+		d.notify(response.Reply())
+		return def, response.Reply()
+	}
+
 	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&def)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), def).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return def, response.Reply()
 	}
-	return wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
+
+	if isEmpty(def) {
+		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), def).BindCause()
+		d.notify(response.Reply())
+		return def, response.Reply()
+	}
+
+	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
 }
 
 // ProcDef retrieves the complete definition of a specified PostgreSQL procedure.
