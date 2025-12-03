@@ -196,8 +196,8 @@ func (d *Datasource) keepalive() {
 					Reply()
 			}
 			d.SetWrap(response)
-			d.invoke(response)
-			d.invokeReplica(response, d)
+			d.onEmit(response)
+			d.onEmitChain(response, d)
 		}
 	}()
 }
@@ -253,11 +253,11 @@ func (d *Datasource) reconnect() error {
 	return nil
 }
 
-// invoke safely retrieves the registered callback function and, if one is set,
+// onEmit safely retrieves the registered callback function and, if one is set,
 // invokes it asynchronously with the provided wrapify.R response. This ensures that
 // external consumers are notified of connection status changes without blocking the
 // calling goroutine.
-func (d *Datasource) invoke(response wrapify.R) {
+func (d *Datasource) onEmit(response wrapify.R) {
 	d.mu.RLock()
 	callback := d.emit
 	d.mu.RUnlock()
@@ -266,11 +266,11 @@ func (d *Datasource) invoke(response wrapify.R) {
 	}
 }
 
-// invokeReplica safely retrieves the registered replica callback function and, if one is set,
+// onEmitChain safely retrieves the registered replica callback function and, if one is set,
 // invokes it asynchronously with the provided wrapify.R response and a pointer to the replica Datasource.
 // This ensures that external consumers are notified of replica-specific connection status changes,
 // such as replica failovers, reconnection attempts, or health updates, without blocking the calling goroutine.
-func (d *Datasource) invokeReplica(response wrapify.R, replicator *Datasource) {
+func (d *Datasource) onEmitChain(response wrapify.R, replicator *Datasource) {
 	d.mu.RLock()
 	callback := d.emitChain
 	d.mu.RUnlock()
