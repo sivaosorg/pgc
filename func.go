@@ -933,7 +933,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	).WithTotal(len(stats)).Reply()
 }
 
-// TablesByColsDeep searches for tables and returns detailed information about column matches.
+// TablesByColsPlus searches for tables and returns detailed information about column matches.
 //
 // This function provides comprehensive information including which columns were found,
 // which were missing, and detailed metadata for each matched column.
@@ -943,12 +943,14 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 //
 // Returns:
 //   - A wrapify. R instance containing detailed matching information.
-func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
+func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColumnsDetail, response wrapify.R) {
 	if !d.IsConnected() {
-		return d.Wrap()
+		return stats, d.Wrap()
 	}
 	if len(columns) == 0 {
-		return wrapify.WrapBadRequest("No columns provided for search", nil).Reply()
+		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
+		d.notify(response.Reply())
+		return stats, response.Reply()
 	}
 
 	// First, get all tables that have at least one of the columns
@@ -972,7 +974,7 @@ func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 	defer rows.Close()
 
@@ -986,7 +988,7 @@ func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
 				nil,
 			).WithErrSck(err)
 			d.notify(response.Reply())
-			return response.Reply()
+			return stats, response.Reply()
 		}
 
 		key := col.SchemaName + "." + col.TableName
@@ -1007,11 +1009,10 @@ func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
 			nil,
 		).WithErrSck(err)
 		d.notify(response.Reply())
-		return response.Reply()
+		return stats, response.Reply()
 	}
 
 	// Build result with missing columns info
-	var results []TableColumnsDetail
 	for _, detail := range tableMap {
 		matchedSet := make(map[string]bool)
 		for _, col := range detail.MatchedColumns {
@@ -1028,29 +1029,29 @@ func (d *Datasource) TablesByColsDeep(columns []string) wrapify.R {
 		detail.MissingColumns = missing
 		detail.MatchedCount = len(detail.MatchedColumns)
 		detail.IsFullMatch = len(missing) == 0
-		results = append(results, *detail)
+		stats = append(stats, *detail)
 	}
 
 	// Sort results: full matches first, then by match count descending
-	sort.Slice(results, func(i, j int) bool {
-		if results[i].IsFullMatch != results[j].IsFullMatch {
-			return results[i].IsFullMatch
+	sort.Slice(stats, func(i, j int) bool {
+		if stats[i].IsFullMatch != stats[j].IsFullMatch {
+			return stats[i].IsFullMatch
 		}
-		if results[i].MatchedCount != results[j].MatchedCount {
-			return results[i].MatchedCount > results[j].MatchedCount
+		if stats[i].MatchedCount != stats[j].MatchedCount {
+			return stats[i].MatchedCount > stats[j].MatchedCount
 		}
-		return results[i].SchemaName+"."+results[i].TableName < results[j].SchemaName+"."+results[j].TableName
+		return stats[i].SchemaName+"."+stats[i].TableName < stats[j].SchemaName+"."+stats[j].TableName
 	})
 
 	fullMatchCount := 0
-	for _, r := range results {
+	for _, r := range stats {
 		if r.IsFullMatch {
 			fullMatchCount++
 		}
 	}
 
-	return wrapify.WrapOk(
-		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(results), fullMatchCount, len(columns)),
-		results,
-	).WithTotal(len(results)).Reply()
+	return stats, wrapify.WrapOk(
+		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(stats), fullMatchCount, len(columns)),
+		stats,
+	).WithTotal(len(stats)).Reply()
 }
