@@ -212,61 +212,45 @@ type Transaction struct {
 	active bool
 }
 
-// FuncSpecMeta represents the metadata for a function parameter retrieved from the PostgreSQL database.
+// FuncsSpec represents the metadata for a function parameter retrieved from the PostgreSQL database.
 //
 // Fields:
 //   - DataType:    The data type of the function parameter.
 //   - RoutineName: The name of the function (routine) to which the parameter belongs.
 //   - ParamName:   The name of the parameter.
 //   - ParamMode:   The mode of the parameter (e.g., IN, OUT, INOUT).
-type FuncSpecMeta struct {
+type FuncsSpec struct {
 	DataType    string `db:"data_type" json:"type,omitempty"`
 	RoutineName string `db:"routine_name" json:"routine_name,omitempty"`
 	ParamName   string `db:"parameter_name" json:"param_name,omitempty"`
 	ParamMode   string `db:"parameter_mode" json:"param_mode,omitempty"`
 }
 
-// TableKeysMeta represents a single metadata record for a table in the PostgreSQL database.
+// TableKeysDef represents a single metadata record for a table in the PostgreSQL database.
 //
 // Fields:
 //   - Name: The name of the constraint or index.
 //   - Type: The type of metadata (e.g., "Primary Key", "Unique Key", or "Index").
 //   - Desc: Additional details, such as the index definition, if applicable.
-type TableKeysMeta struct {
+type TableKeysDef struct {
 	Name string `json:"name,omitempty" db:"c_name"`
 	Type string `json:"type,omitempty" db:"type"`
 	Desc string `json:"desc,omitempty" db:"descriptor"`
 }
 
-// ColsSpecMeta represents metadata information for a column in a PostgreSQL table.
+// ColsSpec represents metadata information for a column in a PostgreSQL table.
 //
 // Fields:
 //   - Column:    The name of the column.
 //   - Type:      The data type of the column.
 //   - MaxLength: The maximum character length allowed for the column (if applicable).
-type ColsSpecMeta struct {
+type ColsSpec struct {
 	Column    string   `json:"column" db:"column_name"`
 	Type      string   `json:"type" db:"data_type"`
 	MaxLength null.Int `json:"max_length" db:"character_maximum_length"`
 }
 
-// TableWithColumns represents a table that contains specified columns.
-//
-// Fields:
-//   - TableName:   The name of the table.
-//   - SchemaName:  The schema name where the table resides.
-//   - MatchedColumns: List of columns that were found in this table.
-//   - TotalColumns:   Total number of columns requested.
-//   - MatchedCount:   Number of columns that matched.
-type TableWithColumns struct {
-	TableName      string   `json:"table_name" db:"table_name"`
-	SchemaName     string   `json:"schema_name" db:"table_schema"`
-	MatchedColumns []string `json:"matched_columns"`
-	TotalColumns   int      `json:"total_columns"`
-	MatchedCount   int      `json:"matched_count"`
-}
-
-// ColumnExistsResult represents the result of checking if a column exists in a specific table.
+// ColsDef represents the result of checking if a column exists in a specific table.
 //
 // Fields:
 //   - TableName:  The name of the table containing the column.
@@ -274,12 +258,28 @@ type TableWithColumns struct {
 //   - ColumnName: The name of the column being checked.
 //   - DataType:   The data type of the column.
 //   - IsNullable: Indicates whether the column allows NULL values.
-type ColumnExistsResult struct {
+type ColsDef struct {
 	TableName  string `json:"table_name" db:"table_name"`
 	SchemaName string `json:"schema_name" db:"table_schema"`
 	ColumnName string `json:"column_name" db:"column_name"`
 	DataType   string `json:"data_type" db:"data_type"`
 	IsNullable string `json:"is_nullable" db:"is_nullable"`
+}
+
+// TableColsSpec represents a table that contains specified columns.
+//
+// Fields:
+//   - TableName:   The name of the table.
+//   - SchemaName:  The schema name where the table resides.
+//   - MatchedColumns: List of columns that were found in this table.
+//   - TotalColumns:   Total number of columns requested.
+//   - MatchedCount:   Number of columns that matched.
+type TableColsSpec struct {
+	TableName      string   `json:"table_name" db:"table_name"`
+	SchemaName     string   `json:"schema_name" db:"table_schema"`
+	MatchedColumns []string `json:"matched_columns"`
+	TotalColumns   int      `json:"total_columns"`
+	MatchedCount   int      `json:"matched_count"`
 }
 
 // FindTablesWithColumnsDetailed searches for tables and returns detailed information about column matches.
@@ -292,12 +292,12 @@ type ColumnExistsResult struct {
 //
 // Returns:
 //   - A wrapify. R instance containing detailed matching information.
-type TableColumnsDetail struct {
-	TableName      string               `json:"table_name"`
-	SchemaName     string               `json:"schema_name"`
-	MatchedColumns []ColumnExistsResult `json:"matched_columns"`
-	MissingColumns []string             `json:"missing_columns"`
-	TotalRequested int                  `json:"total_requested"`
-	MatchedCount   int                  `json:"matched_count"`
-	IsFullMatch    bool                 `json:"is_full_match"`
+type TableColsSpecMeta struct {
+	TableName      string    `json:"table_name"`
+	SchemaName     string    `json:"schema_name"`
+	MatchedColumns []ColsDef `json:"matched_columns"`
+	MissingColumns []string  `json:"missing_columns"`
+	TotalRequested int       `json:"total_requested"`
+	MatchedCount   int       `json:"matched_count"`
+	IsFullMatch    bool      `json:"is_full_match"`
 }

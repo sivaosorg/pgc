@@ -152,7 +152,7 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 // Returns:
 //   - A wrapify.R instance that encapsulates either the retrieved function metadata or an error message,
 //     along with additional metadata such as the total count of metadata segments.
-func (d *Datasource) FuncSpec(function string) (fsm []FuncSpecMeta, response wrapify.R) {
+func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapify.R) {
 	if !d.IsConnected() {
 		return fsm, d.Wrap()
 	}
@@ -542,7 +542,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 //
 // Returns:
 //   - A wrapify.R instance encapsulating either the retrieved metadata (on success) or an error message (on failure).
-func (d *Datasource) TableKeys(table string) (keys []TableKeysMeta, response wrapify.R) {
+func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrapify.R) {
 	if !d.IsConnected() {
 		return keys, d.Wrap()
 	}
@@ -577,7 +577,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysMeta, response wra
 	defer rows.Close()
 
 	for rows.Next() {
-		var m TableKeysMeta
+		var m TableKeysDef
 		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
 			d.notify(response.Reply())
@@ -620,7 +620,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysMeta, response wra
 // Returns:
 //   - A wrapify.R instance that encapsulates either the retrieved column metadata or an error message,
 //     along with additional metadata (e.g., the total count of columns).
-func (d *Datasource) ColsSpec(table string) (cols []ColsSpecMeta, response wrapify.R) {
+func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
 		return cols, d.Wrap()
 	}
@@ -650,7 +650,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpecMeta, response wrapi
 	defer rows.Close()
 
 	for rows.Next() {
-		var m ColsSpecMeta
+		var m ColsSpec
 		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
 			d.notify(response.Reply())
@@ -687,7 +687,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpecMeta, response wrapi
 // Returns:
 //   - A wrapify.R instance that encapsulates either a slice of TableWithColumns containing
 //     all tables with all specified columns, or an error message, along with additional metadata.
-func (d *Datasource) TablesByCols(columns []string) (stats []TableWithColumns, response wrapify.R) {
+func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
 		return stats, d.Wrap()
 	}
@@ -723,7 +723,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableWithColumns, r
 	defer rows.Close()
 
 	for rows.Next() {
-		var r TableWithColumns
+		var r TableColsSpec
 		var matchedCols pq.StringArray
 		if err := rows.Scan(&r.SchemaName, &r.TableName, &matchedCols); err != nil {
 			response := wrapify.WrapInternalServerError(
@@ -776,7 +776,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableWithColumns, r
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns containing
 //     all tables with at least one specified column, or an error message.
-func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableWithColumns, response wrapify.R) {
+func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
 		return stats, d.Wrap()
 	}
@@ -810,7 +810,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableWithColumns
 	defer rows.Close()
 
 	for rows.Next() {
-		var r TableWithColumns
+		var r TableColsSpec
 		var matchedCols pq.StringArray
 		if err := rows.Scan(&r.SchemaName, &r.TableName, &matchedCols); err != nil {
 			response := wrapify.WrapInternalServerError(
@@ -858,7 +858,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableWithColumns
 //
 // Returns:
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns or an error message.
-func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []TableWithColumns, response wrapify.R) {
+func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
 		return stats, d.Wrap()
 	}
@@ -893,7 +893,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	defer rows.Close()
 
 	for rows.Next() {
-		var r TableWithColumns
+		var r TableColsSpec
 		var matchedCols pq.StringArray
 		if err := rows.Scan(&r.SchemaName, &r.TableName, &matchedCols); err != nil {
 			response := wrapify.WrapInternalServerError(
@@ -943,7 +943,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 //
 // Returns:
 //   - A wrapify. R instance containing detailed matching information.
-func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColumnsDetail, response wrapify.R) {
+func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMeta, response wrapify.R) {
 	if !d.IsConnected() {
 		return stats, d.Wrap()
 	}
@@ -979,9 +979,9 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColumnsDet
 	defer rows.Close()
 
 	// Group results by table
-	tableMap := make(map[string]*TableColumnsDetail)
+	tableMap := make(map[string]*TableColsSpecMeta)
 	for rows.Next() {
-		var col ColumnExistsResult
+		var col ColsDef
 		if err := rows.Scan(&col.SchemaName, &col.TableName, &col.ColumnName, &col.DataType, &col.IsNullable); err != nil {
 			response := wrapify.WrapInternalServerError(
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
@@ -993,10 +993,10 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColumnsDet
 
 		key := col.SchemaName + "." + col.TableName
 		if tableMap[key] == nil {
-			tableMap[key] = &TableColumnsDetail{
+			tableMap[key] = &TableColsSpecMeta{
 				TableName:      col.TableName,
 				SchemaName:     col.SchemaName,
-				MatchedColumns: []ColumnExistsResult{},
+				MatchedColumns: []ColsDef{},
 				TotalRequested: len(columns),
 			}
 		}
