@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sivaosorg/loggy"
 	"github.com/sivaosorg/wrapify"
 
 	_ "github.com/lib/pq"
@@ -88,6 +89,13 @@ func NewClient(conf settings) *Datasource {
 	if conf.keepalive {
 		datasource.keepalive()
 	}
+
+	// Set up the query inspector to log executed queries.
+	// This will log the function name, duration, and completed query.
+	datasource.OnInspector(func(ins QueryInspect) {
+		loggy.Infof("[SQL] %s | %v | %s", ins.FuncName, ins.Duration, ins.Completed)
+	})
+
 	return datasource
 }
 
