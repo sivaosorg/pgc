@@ -31,7 +31,14 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 		return tables, d.State()
 	}
 
-	err := d.Conn().Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
+	query := "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+
+	// Start inspection
+	done := d.inspectQuery("Tables", query)
+	err := d.Conn().Select(&tables, query)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
 		d.dispatch_event(EventTableListing, EventLevelError, response.Reply())
