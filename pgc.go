@@ -312,12 +312,14 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 		return
 	}
 
+	// Create a new QueryInspect instance
 	q := newQueryInspectWithDuration(funcName, query, args, duration)
 
 	d.mu.Lock()
 	d.lastInspect = &q
 	d.mu.Unlock()
 
+	// Invoke the inspector callback if it is set
 	if d.inspector != nil {
 		go d.inspector.Inspect(q)
 	}
@@ -326,6 +328,8 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 		WrapProcessing("Starting inspection", nil).
 		WithHeader(wrapify.Processing).
 		Reply()
+
+	// Dispatch the inspection event
 	d.dispatch_event(EventQueryInspect, EventLevelDebug, response)
 }
 

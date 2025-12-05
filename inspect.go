@@ -8,8 +8,8 @@ import (
 )
 
 // Inspect implements the QueryInspector interface for QueryInspectorFunc.
-func (f QueryInspectorFunc) Inspect(q QueryInspect) {
-	f(q)
+func (f QueryInspectorFunc) Inspect(query QueryInspect) {
+	f(query)
 }
 
 // interpolateQuery replaces PostgreSQL placeholders ($1, $2, etc.) with actual values
@@ -26,7 +26,7 @@ func interpolateQuery(query string, args []any) string {
 	for i := len(args) - 1; i >= 0; i-- {
 		placeholder := fmt.Sprintf("$%d", i+1)
 		value := formatArgValue(args[i])
-		result = strings.Replace(result, placeholder, value, -1)
+		result = strings.ReplaceAll(result, placeholder, value)
 	}
 
 	return cleanupQuery(result)
