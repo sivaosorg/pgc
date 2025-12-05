@@ -71,7 +71,19 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 		return functions, d.State()
 	}
 
-	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
+	query := `
+	SELECT routine_name FROM information_schema.routines 
+	WHERE routine_catalog = $1 
+	AND routine_schema = 'public' 
+	AND routine_type = 'FUNCTION'
+	`
+
+	// Start inspection
+	done := d.inspectQuery("Functions", query, d.conf.Database())
+	err := d.Conn().Select(&functions, query, d.conf.Database())
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
 		d.dispatch_event(EventFunctionListing, EventLevelError, response.Reply())
