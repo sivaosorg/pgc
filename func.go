@@ -493,7 +493,12 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 			GROUP BY tc.table_name, tc.constraint_name, ccu.table_name
 		) sub;
 	`
+	// Start inspection
+	done = d.inspectQuery("TableDefPlus-fk", fkQuery, table)
 	err = d.Conn().QueryRow(fkQuery, table).Scan(&fkDDL)
+	// End inspection
+	done()
+
 	if err != nil {
 		// If an error occurs (e.g., no foreign key constraints exist), default to an empty string.
 		fkDDL = ""
@@ -507,7 +512,13 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
+
+	// Start inspection
+	done = d.inspectQuery("TableDefPlus-indexes", indexQuery, table)
 	err = d.Conn().QueryRow(indexQuery, table).Scan(&indexes)
+	// End inspection
+	done()
+
 	if err != nil {
 		// If an error occurs (e.g., no indexes exist), default to an empty string.
 		indexes = ""
