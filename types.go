@@ -170,7 +170,7 @@ type Datasource struct {
 	conf settings
 
 	// A wrapify.R instance that holds the current connection status, error messages, and debugging information.
-	wrap wrapify.R
+	state wrapify.R
 
 	// A pointer to an sqlx.DB object representing the active connection to the PostgreSQL database.
 	conn *sqlx.DB

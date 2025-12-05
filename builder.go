@@ -186,7 +186,7 @@ func (d *Datasource) Conn() *sqlx.DB {
 func (d *Datasource) State() wrapify.R {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	return d.wrap
+	return d.state
 }
 
 // Conf returns the Settings configuration associated with the Datasource.
@@ -376,7 +376,7 @@ func (d *Datasource) SetConn(value *sqlx.DB) *Datasource {
 func (d *Datasource) SetState(value wrapify.R) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.wrap = value
+	d.state = value
 	return d
 }
 
