@@ -455,7 +455,12 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 			AND a.attnum > 0
 		GROUP BY c.relname;
 	`
+	// Start inspection
+	done := d.inspectQuery("TableDefPlus-ddl", ddlQuery, table)
 	err := d.Conn().QueryRow(ddlQuery, table).Scan(&tableDDL)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), tableDDL).
 			WithErrSck(err)
@@ -558,7 +563,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		return keys, response.Reply()
 	}
 
-	s := `
+	query := `
 		SELECT conname AS c_name, 'Primary Key' AS type, '' as descriptor
 		FROM pg_constraint
 		WHERE conrelid = regclass($1)
@@ -575,7 +580,12 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
-	rows, err := d.Conn().Query(s, table)
+	// Start inspection
+	done := d.inspectQuery("TableKeys", query, table)
+	rows, err := d.Conn().Query(query, table)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the table '%s' metadata", table), nil).WithErrSck(err)
 		return keys, response.Reply()
@@ -638,7 +648,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 		return cols, response.Reply()
 	}
 
-	s := `
+	query := `
 		SELECT
 			column_name,
 			data_type,
@@ -648,7 +658,13 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 		WHERE
 			table_name = $1;
 	`
-	rows, err := d.Conn().Query(s, table)
+
+	// Start inspection
+	done := d.inspectQuery("ColsSpec", query, table)
+	rows, err := d.Conn().Query(query, table)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
 		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
@@ -719,7 +735,12 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 		ORDER BY table_schema, table_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablesByCols", query, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns), len(columns))
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
@@ -807,7 +828,12 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 		ORDER BY table_schema, table_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablesByColsIn", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while searching for tables with any columns %v", columns),
@@ -891,7 +917,12 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 		ORDER BY table_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablesByColsIn", query, schema, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, schema, pq.Array(columns), len(columns))
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while searching for tables with columns %v in schema '%s'", columns, schema),
@@ -978,7 +1009,12 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 		ORDER BY table_schema, table_name, column_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablesByColsPlus", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
@@ -1112,7 +1148,12 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 		ORDER BY table_name, privilege_type, grantee;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablePrivs", query, pq.Array(tables), pq.Array(normalizedPrivileges))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges))
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v", tables),
