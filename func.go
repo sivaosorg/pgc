@@ -1478,7 +1478,12 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 		ORDER BY t.table_name, col.column_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("ColsExistsIn", query, pq.Array(tables), pq.Array(columns), schema)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns), schema)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while checking column existence in schema '%s' for tables %v and columns %v", schema, tables, columns),
