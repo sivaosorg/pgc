@@ -75,7 +75,7 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	SELECT routine_name FROM information_schema.routines 
 	WHERE routine_catalog = $1 
 	AND routine_schema = 'public' 
-	AND routine_type = 'FUNCTION'
+	AND routine_type = 'FUNCTION';
 	`
 
 	// Start inspection
@@ -125,7 +125,7 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	SELECT routine_name FROM information_schema.routines 
 	WHERE routine_catalog = $1 
 	AND routine_schema = 'public' 
-	AND routine_type = 'PROCEDURE'
+	AND routine_type = 'PROCEDURE';
 	`
 
 	// Start inspection
