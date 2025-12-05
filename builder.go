@@ -396,18 +396,6 @@ func (d *Datasource) SetInspector(inspector QueryInspector) *Datasource {
 	return d
 }
 
-// SetInspectorFunc sets a function as the query inspector.
-// This is a convenience method for setting a simple inspection function.
-//
-// Parameters:
-//   - fn: A function that will be called with QueryInspect for each executed query.
-//
-// Returns:
-//   - The Datasource instance for method chaining.
-func (d *Datasource) SetInspectorFunc(fn func(q QueryInspect)) *Datasource {
-	return d.SetInspector(QueryInspectorFunc(fn))
-}
-
 // EnableInspect enables query inspection.
 //
 // Returns:
@@ -477,6 +465,18 @@ func (d *Datasource) OnEvent(fnc func(event EventKey, level EventLevel, response
 	defer d.mu.Unlock()
 	d.on_event = fnc
 	return d
+}
+
+// OnInspector sets a function as the query inspector.
+// This is a convenience method for setting a simple inspection function.
+//
+// Parameters:
+//   - fn: A function that will be called with QueryInspect for each executed query.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) OnInspector(fn func(q QueryInspect)) *Datasource {
+	return d.SetInspector(QueryInspectorFunc(fn))
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
