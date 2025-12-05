@@ -1303,3 +1303,227 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 		privs_spec,
 	).WithTotal(len(privs_spec.Privileges)).Reply()
 }
+
+// ColsExists checks the existence of specified columns across specified tables.
+//
+// This function performs a cross-check between a list of tables and a list of columns,
+// determining whether each column exists in each table.  It returns detailed results
+// for each table-column combination along with statistics about existing and missing columns.
+//
+// The function queries the information_schema.columns to verify column existence
+// in the 'public' schema.
+//
+// Parameters:
+//   - tables:  A slice of table names to check.
+//   - columns: A slice of column names to check for existence in each table.
+//
+// Returns:
+//   - A ColExistsSpecMeta containing all check results and statistics.
+//   - A wrapify.R instance that encapsulates either the result or an error message.
+func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExistsSpecMeta, response wrapify.R) {
+	if !d.IsConnected() {
+		return ces, d.State()
+	}
+
+	if len(tables) == 0 {
+		response := wrapify.WrapBadRequest("No tables provided for column existence check", nil).BindCause()
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	if len(columns) == 0 {
+		response := wrapify.WrapBadRequest("No columns provided for existence check", nil).BindCause()
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	query := `
+		WITH tables_to_check AS (
+			SELECT unnest($1::text[]) as table_name
+		),
+		columns_to_check AS (
+			SELECT unnest($2::text[]) as column_name
+		)
+		SELECT 
+			t. table_name,
+			col.column_name,
+			CASE 
+				WHEN ic.column_name IS NOT NULL THEN 'exists'
+				ELSE 'does not exist'
+			END as status
+		FROM tables_to_check t
+		CROSS JOIN columns_to_check col
+		LEFT JOIN information_schema.columns ic 
+			ON ic.table_name = t.table_name 
+			AND ic.column_name = col.column_name
+			AND ic.table_schema = 'public'
+		ORDER BY t. table_name, col.column_name;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns))
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while checking column existence for tables %v and columns %v", tables, columns),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var r ColExistsDef
+		if err := rows.Scan(&r.TableName, &r.ColumnName, &r.Status); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning column existence results for tables %v", tables),
+				nil,
+			).WithErrSck(err)
+			d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+			return ces, response.Reply()
+		}
+
+		r.Exists = r.Status == "exists"
+		ces.Cols = append(ces.Cols, r)
+
+		// Categorize into existing and missing
+		if r.Exists {
+			ces.Stats.ExistingCols = append(ces.Stats.ExistingCols, r)
+		} else {
+			ces.Stats.MissingCols = append(ces.Stats.MissingCols, r)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating column existence results for tables %v", tables),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	// Build statistics
+	ces.Stats.TotalChecked = len(ces.Cols)
+	ces.Stats.TotalExisting = len(ces.Stats.ExistingCols)
+	ces.Stats.TotalMissing = len(ces.Stats.MissingCols)
+
+	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
+	return ces, wrapify.WrapOk(
+		fmt.Sprintf("Checked %d table-column combination(s): %d existing, %d missing",
+			ces.Stats.TotalChecked, ces.Stats.TotalExisting, ces.Stats.TotalMissing),
+		ces,
+	).WithTotal(ces.Stats.TotalChecked).Reply()
+}
+
+// ColsExistsIn checks the existence of specified columns across specified tables within a specific schema.
+//
+// This function is similar to ColsExists but allows specifying a custom schema instead of defaulting to 'public'.
+//
+// Parameters:
+//   - schema:  The schema name to check columns in.
+//   - tables:  A slice of table names to check.
+//   - columns: A slice of column names to check for existence in each table.
+//
+// Returns:
+//   - A ColExistsSpecMeta containing all check results and statistics.
+//   - A wrapify.R instance that encapsulates either the result or an error message.
+func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []string) (ces ColExistsSpecMeta, response wrapify.R) {
+	if !d.IsConnected() {
+		return ces, d.State()
+	}
+
+	if isEmpty(schema) {
+		response := wrapify.WrapBadRequest("Schema name is required", nil).BindCause()
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	if len(tables) == 0 {
+		response := wrapify.WrapBadRequest("No tables provided for column existence check", nil).BindCause()
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	if len(columns) == 0 {
+		response := wrapify.WrapBadRequest("No columns provided for existence check", nil).BindCause()
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	query := `
+		WITH tables_to_check AS (
+			SELECT unnest($1::text[]) as table_name
+		),
+		columns_to_check AS (
+			SELECT unnest($2::text[]) as column_name
+		)
+		SELECT 
+			t. table_name,
+			col.column_name,
+			CASE 
+				WHEN ic.column_name IS NOT NULL THEN 'exists'
+				ELSE 'does not exist'
+			END as status
+		FROM tables_to_check t
+		CROSS JOIN columns_to_check col
+		LEFT JOIN information_schema.columns ic 
+			ON ic.table_name = t.table_name 
+			AND ic.column_name = col.column_name
+			AND ic.table_schema = $3
+		ORDER BY t.table_name, col.column_name;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns), schema)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while checking column existence in schema '%s' for tables %v and columns %v", schema, tables, columns),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var r ColExistsDef
+		if err := rows.Scan(&r.TableName, &r.ColumnName, &r.Status); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning column existence results in schema '%s' for tables %v", schema, tables),
+				nil,
+			).WithErrSck(err)
+			d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+			return ces, response.Reply()
+		}
+
+		r.Exists = r.Status == "exists"
+		ces.Cols = append(ces.Cols, r)
+
+		// Categorize into existing and missing
+		if r.Exists {
+			ces.Stats.ExistingCols = append(ces.Stats.ExistingCols, r)
+		} else {
+			ces.Stats.MissingCols = append(ces.Stats.MissingCols, r)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating column existence results in schema '%s' for tables %v", schema, tables),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		return ces, response.Reply()
+	}
+
+	// Build statistics
+	ces.Stats.TotalChecked = len(ces.Cols)
+	ces.Stats.TotalExisting = len(ces.Stats.ExistingCols)
+	ces.Stats.TotalMissing = len(ces.Stats.MissingCols)
+
+	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
+	return ces, wrapify.WrapOk(
+		fmt.Sprintf("Checked %d table-column combination(s) in schema '%s': %d existing, %d missing",
+			ces.Stats.TotalChecked, schema, ces.Stats.TotalExisting, ces.Stats.TotalMissing),
+		ces,
+	).WithTotal(ces.Stats.TotalChecked).Reply()
+}

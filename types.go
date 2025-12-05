@@ -393,6 +393,6 @@ type ColExistsSpec struct {
 //   - Results: All column existence check results.
 //   - Stats:   Summary statistics about the existence check.
 type ColExistsSpecMeta struct {
-	Results []ColExistsDef `json:"results"`
-	Stats   ColExistsSpec  `json:"stats"`
+	Cols  []ColExistsDef `json:"cols"`
+	Stats ColExistsSpec  `json:"stats"`
 }
