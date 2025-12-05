@@ -475,7 +475,7 @@ func (d *Datasource) OnEvent(fnc func(event EventKey, level EventLevel, response
 //
 // Returns:
 //   - The Datasource instance for method chaining.
-func (d *Datasource) OnInspector(fn func(q QueryInspect)) *Datasource {
+func (d *Datasource) OnInspector(fn func(ins QueryInspect)) *Datasource {
 	return d.SetInspector(QueryInspectorFunc(fn))
 }
 
