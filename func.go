@@ -163,7 +163,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 		return fsm, response.Reply()
 	}
 
-	err := d.Conn().Select(&fsm, `
+	query := `
 			SELECT 
 				r.routine_name, 
 				p.data_type, 
@@ -175,8 +175,13 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 			WHERE r.routine_catalog = $1 
 				AND r.routine_schema = 'public' 
 				AND r.routine_name = $2
-				`,
-		d.conf.Database(), function)
+	`
+
+	// Start inspection
+	done := d.inspectQuery("FuncSpec", query, d.conf.Database(), function)
+	err := d.Conn().Select(&fsm, query, d.conf.Database(), function)
+	// End inspection
+	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), fsm).WithErrSck(err)
@@ -226,7 +231,14 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 		return def, response.Reply()
 	}
 
-	err := d.Conn().QueryRow("SELECT pg_get_functiondef($1::regproc)", function).Scan(&def)
+	query := "SELECT pg_get_functiondef($1::regproc)"
+
+	// Start inspection
+	done := d.inspectQuery("FuncDef", query, function)
+	err := d.Conn().QueryRow(query, function).Scan(&def)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), def).WithErrSck(err)
 		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
@@ -286,7 +298,13 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	WHERE p. proname = $1 AND p.prokind = 'p'
 	LIMIT 1
 	`
+
+	// Start inspection
+	done := d.inspectQuery("ProcDef", query, procedure)
 	err := d.Conn().QueryRow(query, procedure).Scan(&def)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
 		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
@@ -351,7 +369,13 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 			AND a.attnum > 0
 		GROUP BY c.relname;
 	`
+
+	// Start inspection
+	done := d.inspectQuery("TableDef", query, table)
 	err := d.Conn().QueryRow(query, table).Scan(&ddl)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), ddl).
 			WithErrSck(err)
