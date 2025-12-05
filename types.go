@@ -355,3 +355,44 @@ type TablePrivsSpecMeta struct {
 	Privileges []PrivsDef     `json:"privileges"`
 	Stats      TablePrivsSpec `json:"stats"`
 }
+
+// ColExistsDef represents the existence status of a column in a specific table.
+//
+// Fields:
+//   - TableName:  The name of the table being checked.
+//   - ColumnName: The name of the column being checked.
+//   - Exists:     Whether the column exists in the table.
+//   - Status:     Human-readable status ("Exists" or "Does not exist").
+type ColExistsDef struct {
+	TableName  string `json:"table_name" db:"table_name"`
+	ColumnName string `json:"column_name" db:"column_name"`
+	Exists     bool   `json:"exists"`
+	Status     string `json:"status" db:"status"`
+}
+
+// ColExistsSpec provides statistics about column existence checks across tables.
+//
+// Fields:
+//   - ExistingCols:    List of table-column pairs that exist.
+//   - MissingCols:     List of table-column pairs that do not exist.
+//   - TotalChecked:    Total number of table-column combinations checked.
+//   - TotalExisting:   Count of existing columns.
+//   - TotalMissing:    Count of missing columns.
+type ColExistsSpec struct {
+	ExistingCols  []ColExistsDef `json:"existing_cols"`
+	MissingCols   []ColExistsDef `json:"missing_cols"`
+	TotalChecked  int            `json:"total_checked"`
+	TotalExisting int            `json:"total_existing"`
+	TotalMissing  int            `json:"total_missing"`
+}
+
+// ColExistsSpecMeta holds the complete result of a column existence check operation,
+// including all check results and summary statistics.
+//
+// Fields:
+//   - Results: All column existence check results.
+//   - Stats:   Summary statistics about the existence check.
+type ColExistsSpecMeta struct {
+	Results []ColExistsDef `json:"results"`
+	Stats   ColExistsSpec  `json:"stats"`
+}

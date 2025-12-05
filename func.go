@@ -1088,13 +1088,13 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if len(privileges) == 0 {
 		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1118,7 +1118,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 	defer rows.Close()
@@ -1133,7 +1133,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+			d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 			return privs_spec, response.Reply()
 		}
 		privs_spec.Privileges = append(privs_spec.Privileges, priv)
@@ -1145,7 +1145,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1167,7 +1167,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 	privs_spec.Stats.TotalWithPrivilege = len(privs_spec.Stats.TablesWithPrivileges)
 	privs_spec.Stats.TotalWithoutPrivilege = len(privs_spec.Stats.TablesWithoutPrivilege)
 
-	d.dispatch_event(EventTablePrivilege, EventLevelSuccess, response.Reply())
+	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
 	return privs_spec, wrapify.WrapOk(
 		fmt.Sprintf("Retrieved privileges for %d table(s): %d with privileges, %d without privileges",
 			len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
@@ -1210,19 +1210,19 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if len(privileges) == 0 {
 		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if isEmpty(grantee) {
 		response := wrapify.WrapBadRequest("Grantee (user/role) name is required", nil).BindCause()
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1247,7 +1247,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v and grantee '%s'", tables, grantee),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 	defer rows.Close()
@@ -1262,7 +1262,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+			d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 			return privs_spec, response.Reply()
 		}
 		privs_spec.Privileges = append(privs_spec.Privileges, priv)
@@ -1274,7 +1274,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1296,7 +1296,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 	privs_spec.Stats.TotalWithPrivilege = len(privs_spec.Stats.TablesWithPrivileges)
 	privs_spec.Stats.TotalWithoutPrivilege = len(privs_spec.Stats.TablesWithoutPrivilege)
 
-	d.dispatch_event(EventTablePrivilege, EventLevelSuccess, response.Reply())
+	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
 	return privs_spec, wrapify.WrapOk(
 		fmt.Sprintf("Retrieved privileges for grantee '%s' on %d table(s): %d with privileges, %d without privileges",
 			grantee, len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
