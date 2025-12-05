@@ -1067,3 +1067,239 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 		stats,
 	).WithTotal(len(stats)).Reply()
 }
+
+// TablePrivs retrieves the privileges granted on specified tables for specified privilege types.
+//
+// This function queries the information_schema.role_table_grants to find all privilege grants
+// matching the given tables and privilege types.  It returns detailed privilege information
+// along with statistics about which tables have and don't have the requested privileges.
+//
+// Parameters:
+//   - tables:     A slice of table names to check privileges for.
+//   - privileges: A slice of privilege types to check (e.g., "SELECT", "INSERT", "UPDATE", "DELETE").
+//
+// Returns:
+//   - A TablePrivilegesSpecMeta containing the list of privileges and statistics.
+//   - A wrapify. R instance that encapsulates either the result or an error message.
+func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spec TablePrivsSpecMeta, response wrapify.R) {
+	if !d.IsConnected() {
+		return privs_spec, d.State()
+	}
+
+	if len(tables) == 0 {
+		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	if len(privileges) == 0 {
+		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	// Normalize privilege types to uppercase
+	normalizedPrivileges := make([]string, len(privileges))
+	for i, p := range privileges {
+		normalizedPrivileges[i] = strings.ToUpper(strings.TrimSpace(p))
+	}
+
+	query := `
+		SELECT grantee, privilege_type, table_name
+		FROM information_schema.role_table_grants
+		WHERE table_name = ANY($1)
+		  AND privilege_type = ANY($2)
+		ORDER BY table_name, privilege_type, grantee;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges))
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while retrieving privileges for tables %v", tables),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+	defer rows.Close()
+
+	// Track which tables have privileges
+	tablesWithPrivileges := make(map[string]bool)
+
+	for rows.Next() {
+		var priv PrivsDef
+		if err := rows.Scan(&priv.Grantee, &priv.PrivilegeType, &priv.TableName); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
+				nil,
+			).WithErrSck(err)
+			d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+			return privs_spec, response.Reply()
+		}
+		privs_spec.Privileges = append(privs_spec.Privileges, priv)
+		tablesWithPrivileges[priv.TableName] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	// Build statistics
+	privs_spec.Stats.TotalRequested = len(tables)
+
+	for _, table := range tables {
+		if tablesWithPrivileges[table] {
+			privs_spec.Stats.TablesWithPrivileges = append(privs_spec.Stats.TablesWithPrivileges, table)
+		} else {
+			privs_spec.Stats.TablesWithoutPrivilege = append(privs_spec.Stats.TablesWithoutPrivilege, table)
+		}
+	}
+
+	// Sort the lists for consistent output
+	sort.Strings(privs_spec.Stats.TablesWithPrivileges)
+	sort.Strings(privs_spec.Stats.TablesWithoutPrivilege)
+
+	privs_spec.Stats.TotalWithPrivilege = len(privs_spec.Stats.TablesWithPrivileges)
+	privs_spec.Stats.TotalWithoutPrivilege = len(privs_spec.Stats.TablesWithoutPrivilege)
+
+	d.dispatch_event(EventTablePrivilege, EventLevelSuccess, response.Reply())
+	return privs_spec, wrapify.WrapOk(
+		fmt.Sprintf("Retrieved privileges for %d table(s): %d with privileges, %d without privileges",
+			len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
+		privs_spec,
+	).WithTotal(len(privs_spec.Privileges)).Reply()
+}
+
+// TableAllPrivs retrieves all standard privileges for the specified tables.
+//
+// This function is a convenience wrapper around TablePrivs that requests all common
+// privilege types: SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, and TRIGGER.
+//
+// Parameters:
+//   - tables: A slice of table names to check privileges for.
+//
+// Returns:
+//   - A TablePrivsSpecMeta containing the list of privileges and statistics.
+//   - A wrapify. R instance that encapsulates either the result or an error message.
+func (d *Datasource) TableAllPrivs(tables ...string) (privs_spec TablePrivsSpecMeta, response wrapify.R) {
+	privileges := []string{"SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"}
+	return d.TablePrivs(tables, privileges)
+}
+
+// TablePrivsByUser retrieves privileges for specific tables filtered by a specific grantee (user/role).
+//
+// This function is similar to TablePrivs but adds an additional filter for a specific user or role.
+//
+// Parameters:
+//   - tables:     A slice of table names to check privileges for.
+//   - privileges: A slice of privilege types to check (e.g., "SELECT", "INSERT", "UPDATE", "DELETE").
+//   - grantee:    The name of the user or role to filter privileges by.
+//
+// Returns:
+//   - A TablePrivsSpecMeta containing the list of privileges and statistics.
+//   - A wrapify. R instance that encapsulates either the result or an error message.
+func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, grantee string) (privs_spec TablePrivsSpecMeta, response wrapify.R) {
+	if !d.IsConnected() {
+		return privs_spec, d.State()
+	}
+
+	if len(tables) == 0 {
+		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	if len(privileges) == 0 {
+		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	if isEmpty(grantee) {
+		response := wrapify.WrapBadRequest("Grantee (user/role) name is required", nil).BindCause()
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	// Normalize privilege types to uppercase
+	normalizedPrivileges := make([]string, len(privileges))
+	for i, p := range privileges {
+		normalizedPrivileges[i] = strings.ToUpper(strings.TrimSpace(p))
+	}
+
+	query := `
+		SELECT grantee, privilege_type, table_name
+		FROM information_schema.role_table_grants
+		WHERE table_name = ANY($1)
+		  AND privilege_type = ANY($2)
+		  AND grantee = $3
+		ORDER BY table_name, privilege_type, grantee;
+	`
+
+	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
+	if err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while retrieving privileges for tables %v and grantee '%s'", tables, grantee),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+	defer rows.Close()
+
+	// Track which tables have privileges
+	tablesWithPrivs := make(map[string]bool)
+
+	for rows.Next() {
+		var priv PrivsDef
+		if err := rows.Scan(&priv.Grantee, &priv.PrivilegeType, &priv.TableName); err != nil {
+			response := wrapify.WrapInternalServerError(
+				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
+				nil,
+			).WithErrSck(err)
+			d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+			return privs_spec, response.Reply()
+		}
+		privs_spec.Privileges = append(privs_spec.Privileges, priv)
+		tablesWithPrivs[priv.TableName] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		response := wrapify.WrapInternalServerError(
+			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
+			nil,
+		).WithErrSck(err)
+		d.dispatch_event(EventTablePrivilege, EventLevelError, response.Reply())
+		return privs_spec, response.Reply()
+	}
+
+	// Build statistics
+	privs_spec.Stats.TotalRequested = len(tables)
+
+	for _, table := range tables {
+		if tablesWithPrivs[table] {
+			privs_spec.Stats.TablesWithPrivileges = append(privs_spec.Stats.TablesWithPrivileges, table)
+		} else {
+			privs_spec.Stats.TablesWithoutPrivilege = append(privs_spec.Stats.TablesWithoutPrivilege, table)
+		}
+	}
+
+	// Sort the lists for consistent output
+	sort.Strings(privs_spec.Stats.TablesWithPrivileges)
+	sort.Strings(privs_spec.Stats.TablesWithoutPrivilege)
+
+	privs_spec.Stats.TotalWithPrivilege = len(privs_spec.Stats.TablesWithPrivileges)
+	privs_spec.Stats.TotalWithoutPrivilege = len(privs_spec.Stats.TablesWithoutPrivilege)
+
+	d.dispatch_event(EventTablePrivilege, EventLevelSuccess, response.Reply())
+	return privs_spec, wrapify.WrapOk(
+		fmt.Sprintf("Retrieved privileges for grantee '%s' on %d table(s): %d with privileges, %d without privileges",
+			grantee, len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
+		privs_spec,
+	).WithTotal(len(privs_spec.Privileges)).Reply()
+}

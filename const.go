@@ -57,6 +57,7 @@ const (
 	EventTableSearchByAnyCols = EventKey("event_table_search_by_any_cols")
 	EventTableColsSpec        = EventKey("event_table_cols_spec")
 	EventTablesByColsIn       = EventKey("event_tables_by_cols_in")
+	EventTablePrivilege       = EventKey("event_table_privs")
 
 	// Connection events
 	EventConnOpen  = EventKey("event_conn_open")

@@ -316,3 +316,42 @@ type TableColsSpecMeta struct {
 	MatchedCount   int       `json:"matched_count"`
 	IsFullMatch    bool      `json:"is_full_match"`
 }
+
+// PrivsDef represents a single privilege grant for a table in PostgreSQL.
+//
+// Fields:
+//   - TableName:     The name of the table.
+//   - PrivilegeType: The type of privilege (e.g., SELECT, INSERT, UPDATE, DELETE).
+//   - Grantee:       The user or role that has been granted the privilege.
+type PrivsDef struct {
+	TableName     string `json:"table_name" db:"table_name"`
+	PrivilegeType string `json:"privilege_type" db:"privilege_type"`
+	Grantee       string `json:"grantee" db:"grantee"`
+}
+
+// TablePrivsSpec provides statistics about privilege checks across tables.
+//
+// Fields:
+//   - TablesWithPrivileges:    Tables that have at least one of the requested privileges.
+//   - TablesWithoutPrivilege: Tables that have none of the requested privileges.
+//   - TotalRequested:     Total number of tables requested to check.
+//   - TotalWithPrivilege:     Count of tables with at least one privilege.
+//   - TotalWithoutPrivilege:  Count of tables without any of the requested privileges.
+type TablePrivsSpec struct {
+	TablesWithPrivileges   []string `json:"tables_with_privileges"`
+	TablesWithoutPrivilege []string `json:"tables_without_privileges"`
+	TotalRequested         int      `json:"total_requested"`
+	TotalWithPrivilege     int      `json:"total_with_privileges"`
+	TotalWithoutPrivilege  int      `json:"total_without_privileges"`
+}
+
+// TablePrivsSpecMeta holds the complete result of a privilege check operation,
+// including detailed privilege grants and summary statistics.
+//
+// Fields:
+//   - Privileges: All the privilege grants found.
+//   - Stats: Summary statistics about the privilege check.
+type TablePrivsSpecMeta struct {
+	Privileges []PrivsDef     `json:"privileges"`
+	Stats      TablePrivsSpec `json:"stats"`
+}
