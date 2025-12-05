@@ -1241,7 +1241,12 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 		ORDER BY table_name, privilege_type, grantee;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("TablePrivsByUser", query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v and grantee '%s'", tables, grantee),
