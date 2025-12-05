@@ -429,9 +429,8 @@ type QueryInspect struct {
 // QueryInspector is an interface for inspecting SQL queries.
 // Implementations can log, store, or process query inspections as needed.
 type QueryInspector interface {
-	// Inspect is called when a query is executed.
-	Inspect(q QueryInspect)
+	Inspect(ins QueryInspect)
 }
 
 // QueryInspectorFunc is a function adapter that implements QueryInspector.
-type QueryInspectorFunc func(q QueryInspect)
+type QueryInspectorFunc func(ins QueryInspect)
