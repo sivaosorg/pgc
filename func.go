@@ -1360,7 +1360,11 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 		ORDER BY t. table_name, col.column_name;
 	`
 
+	// Start inspection
+	done := d.inspectQuery("ColsExists", query, pq.Array(tables), pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns))
+	// End inspection
+	done()
 	if err != nil {
 		response := wrapify.WrapInternalServerError(
 			fmt.Sprintf("An error occurred while checking column existence for tables %v and columns %v", tables, columns),

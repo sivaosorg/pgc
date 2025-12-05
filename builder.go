@@ -380,6 +380,71 @@ func (d *Datasource) SetState(value wrapify.R) *Datasource {
 	return d
 }
 
+// SetInspector sets the query inspector for the datasource.
+// The inspector will receive inspection information for each executed query.
+//
+// Parameters:
+//   - inspector: A QueryInspector implementation that will receive query inspections.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) SetInspector(inspector QueryInspector) *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.inspector = inspector
+	d.inspectEnabled = inspector != nil
+	return d
+}
+
+// SetInspectorFunc sets a function as the query inspector.
+// This is a convenience method for setting a simple inspection function.
+//
+// Parameters:
+//   - fn: A function that will be called with QueryInspect for each executed query.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) SetInspectorFunc(fn func(q QueryInspect)) *Datasource {
+	return d.SetInspector(QueryInspectorFunc(fn))
+}
+
+// EnableInspect enables query inspection.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) EnableInspect() *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.inspectEnabled = true
+	return d
+}
+
+// DisableInspect disables query inspection.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) DisableInspect() *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.inspectEnabled = false
+	return d
+}
+
+// IsInspectEnabled returns whether query inspection is enabled.
+func (d *Datasource) IsInspectEnabled() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.inspectEnabled
+}
+
+// LastInspect returns the most recent query inspection.
+// Returns nil if no queries have been inspected yet.
+func (d *Datasource) LastInspect() *QueryInspect {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.lastInspect
+}
+
 // OnReconnect sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
 // and returns the updated Datasource for method chaining.
 func (d *Datasource) OnReconnect(fnc func(response wrapify.R)) *Datasource {

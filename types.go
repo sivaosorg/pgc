@@ -175,6 +175,17 @@ type Datasource struct {
 	// A pointer to an sqlx.DB object representing the active connection to the PostgreSQL database.
 	conn *sqlx.DB
 
+	// inspector is an optional QueryInspector that receives inspection information for each executed query.
+	// When set, it allows external components to log, monitor, or analyze SQL queries.
+	inspector QueryInspector
+
+	// inspectEnabled indicates whether query inspection is enabled.
+	// When true, all executed queries will be inspected and sent to the inspector callback.
+	inspectEnabled bool
+
+	// lastInspect holds the most recent query inspection for debugging purposes.
+	lastInspect *QueryInspect
+
 	// A callback function that is invoked asynchronously when there is a change in connection status,
 	//  such as when the connection is lost, re-established, or its health is updated.
 	on_reconnect func(response wrapify.R)
@@ -396,3 +407,31 @@ type ColExistsSpecMeta struct {
 	Cols  []ColExistsDef `json:"cols"`
 	Stats ColExistsSpec  `json:"stats"`
 }
+
+// QueryInspect represents the inspection information of an executed SQL query.
+//
+// Fields:
+//   - Query:       The raw SQL query string with placeholders.
+//   - Args:        The arguments passed to the query.
+//   - Completed:   The fully interpolated SQL query with arguments replaced.
+//   - ExecutedAt:  The timestamp when the query was executed.
+//   - Duration:    The duration of the query execution.
+//   - FuncName:    The name of the function that executed the query.
+type QueryInspect struct {
+	Query      string        `json:"query"`
+	Args       []any         `json:"args,omitempty"`
+	Completed  string        `json:"completed"`
+	ExecutedAt time.Time     `json:"executed_at"`
+	Duration   time.Duration `json:"duration,omitempty"`
+	FuncName   string        `json:"func_name,omitempty"`
+}
+
+// QueryInspector is an interface for inspecting SQL queries.
+// Implementations can log, store, or process query inspections as needed.
+type QueryInspector interface {
+	// Inspect is called when a query is executed.
+	Inspect(q QueryInspect)
+}
+
+// QueryInspectorFunc is a function adapter that implements QueryInspector.
+type QueryInspectorFunc func(q QueryInspect)

@@ -59,6 +59,7 @@ const (
 	EventTablesByColsIn       = EventKey("event_tables_by_cols_in")
 	EventTablePrivileges      = EventKey("event_table_privs")
 	EventTableColsExists      = EventKey("event_table_cols_exists")
+	EventQueryInspect         = EventKey("event_query_inspect")
 
 	// Connection events
 	EventConnOpen  = EventKey("event_conn_open")

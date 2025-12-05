@@ -298,3 +298,51 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 		go callback(event, level, response)
 	}
 }
+
+// inspect records a query inspection and dispatches it to the inspector if enabled.
+// It also updates the lastInspect field with the latest inspection data.
+//
+// Parameters:
+//   - funcName: The name of the function executing the query.
+//   - query: The SQL query string.
+//   - args: The arguments passed to the query.
+//   - duration: The duration taken to execute the query.
+func (d *Datasource) inspect(funcName, query string, args []any, duration time.Duration) {
+	if !d.inspectEnabled {
+		return
+	}
+
+	q := newQueryInspectWithDuration(funcName, query, args, duration)
+
+	d.mu.Lock()
+	d.lastInspect = &q
+	d.mu.Unlock()
+
+	if d.inspector != nil {
+		go d.inspector.Inspect(q)
+	}
+
+	response := wrapify.
+		WrapProcessing("Starting inspection", nil).
+		WithHeader(wrapify.Processing).
+		Reply()
+	d.dispatch_event(EventQueryInspect, EventLevelDebug, response)
+}
+
+// inspectQuery is a helper method to inspect a query with timing.
+// It returns a function that should be called after the query completes.
+//
+// Parameters:
+//   - funcName: The name of the function executing the query.
+//   - query: The SQL query string.
+//   - args: The arguments passed to the query.
+func (d *Datasource) inspectQuery(funcName, query string, args ...any) func() {
+	if !d.inspectEnabled {
+		return func() {}
+	}
+
+	start := time.Now()
+	return func() {
+		d.inspect(funcName, query, args, time.Since(start))
+	}
+}
