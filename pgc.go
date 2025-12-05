@@ -32,7 +32,7 @@ func NewClient(conf settings) *Datasource {
 	}
 	start := time.Now()
 	if !conf.IsEnabled() {
-		datasource.SetWrap(wrapify.
+		datasource.SetState(wrapify.
 			WrapServiceUnavailable("Postgresql service unavailable", nil).
 			WithDebuggingKV("executed_in", time.Since(start).String()).
 			WithHeader(wrapify.ServiceUnavailable).
@@ -43,7 +43,7 @@ func NewClient(conf settings) *Datasource {
 	// Attempt to open a connection to PostgreSQL using the provided connection string.
 	c, err := sqlx.Open("postgres", conf.String(false))
 	if err != nil {
-		datasource.SetWrap(
+		datasource.SetState(
 			wrapify.WrapInternalServerError("Unable to connect to the postgresql database", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithDebuggingKV("executed_in", time.Since(start).String()).
@@ -59,7 +59,7 @@ func NewClient(conf settings) *Datasource {
 	defer cancel()
 	err = c.PingContext(ctx)
 	if err != nil {
-		datasource.SetWrap(
+		datasource.SetState(
 			wrapify.WrapInternalServerError("The postgresql database is unreachable", nil).
 				WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 				WithDebuggingKV("executed_in", time.Since(start).String()).
@@ -76,7 +76,7 @@ func NewClient(conf settings) *Datasource {
 
 	// Set the established connection and update the wrap response to indicate success.
 	datasource.SetConn(c)
-	datasource.SetWrap(wrapify.New().
+	datasource.SetState(wrapify.New().
 		WithStatusCode(http.StatusOK).
 		WithDebuggingKV("pgsql_conn_str", conf.String(true)).
 		WithDebuggingKV("executed_in", time.Since(start).String()).
@@ -202,7 +202,7 @@ func (d *Datasource) keepalive() {
 					WithHeader(wrapify.OK).
 					Reply()
 			}
-			d.SetWrap(response)
+			d.SetState(response)
 			d.dispatch_reconnect(response)
 			d.dispatch_reconnect_chain(response, d)
 		}

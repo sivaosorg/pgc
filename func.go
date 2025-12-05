@@ -28,7 +28,7 @@ import (
 //   - A wrapify.R instance encapsulating either the successful retrieval of table names or the error encountered.
 func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return tables, d.Wrap()
+		return tables, d.State()
 	}
 
 	err := d.Conn().Select(&tables, "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
@@ -68,7 +68,7 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 //     along with metadata such as the total count of functions.
 func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return functions, d.Wrap()
+		return functions, d.State()
 	}
 
 	err := d.Conn().Select(&functions, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'FUNCTION'", d.conf.Database())
@@ -106,7 +106,7 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 //     such as the total count of procedures.
 func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	if !d.IsConnected() {
-		return procedures, d.Wrap()
+		return procedures, d.State()
 	}
 
 	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
@@ -155,7 +155,7 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 //     along with additional metadata such as the total count of metadata segments.
 func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapify.R) {
 	if !d.IsConnected() {
-		return fsm, d.Wrap()
+		return fsm, d.State()
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", fsm).BindCause()
@@ -218,7 +218,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 //     along with additional metadata.
 func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 	if !d.IsConnected() {
-		return def, d.Wrap()
+		return def, d.State()
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", def).BindCause()
@@ -270,7 +270,7 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 //     along with additional metadata such as the total count (1 in this case).
 func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) {
 	if !d.IsConnected() {
-		return def, d.Wrap()
+		return def, d.State()
 	}
 	if isEmpty(procedure) {
 		response := wrapify.WrapBadRequest("Procedure name is required", def).BindCause()
@@ -326,7 +326,7 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 //     (on failure), along with additional metadata.
 func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	if !d.IsConnected() {
-		return ddl, d.Wrap()
+		return ddl, d.State()
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
@@ -397,7 +397,7 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 //     (on failure), along with additional metadata.
 func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R) {
 	if !d.IsConnected() {
-		return ddl, d.Wrap()
+		return ddl, d.State()
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
@@ -550,7 +550,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 //   - A wrapify.R instance encapsulating either the retrieved metadata (on success) or an error message (on failure).
 func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrapify.R) {
 	if !d.IsConnected() {
-		return keys, d.Wrap()
+		return keys, d.State()
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", keys).BindCause()
@@ -629,7 +629,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 //     along with additional metadata (e.g., the total count of columns).
 func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
-		return cols, d.Wrap()
+		return cols, d.State()
 	}
 
 	if isEmpty(table) {
@@ -697,7 +697,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 //     all tables with all specified columns, or an error message, along with additional metadata.
 func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
-		return stats, d.Wrap()
+		return stats, d.State()
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
@@ -787,7 +787,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 //     all tables with at least one specified column, or an error message.
 func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
-		return stats, d.Wrap()
+		return stats, d.State()
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
@@ -870,7 +870,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 //   - A wrapify. R instance that encapsulates either a slice of TableWithColumns or an error message.
 func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []TableColsSpec, response wrapify.R) {
 	if !d.IsConnected() {
-		return stats, d.Wrap()
+		return stats, d.State()
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
@@ -956,7 +956,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 //   - A wrapify. R instance containing detailed matching information.
 func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMeta, response wrapify.R) {
 	if !d.IsConnected() {
-		return stats, d.Wrap()
+		return stats, d.State()
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()

@@ -181,9 +181,9 @@ func (d *Datasource) Conn() *sqlx.DB {
 	return d.conn
 }
 
-// Wrap returns the current wrapify.R instance, which encapsulates the connection status,
+// State returns the current wrapify.R instance, which encapsulates the connection status,
 // any error messages, and debugging information in a thread-safe manner.
-func (d *Datasource) Wrap() wrapify.R {
+func (d *Datasource) State() wrapify.R {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.wrap
@@ -197,7 +197,7 @@ func (d *Datasource) Conf() settings {
 // IsConnected returns true if the current wrap indicates a successful connection to PostgreSQL,
 // otherwise it returns false.
 func (d *Datasource) IsConnected() bool {
-	return d.Wrap().IsSuccess()
+	return d.State().IsSuccess()
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -371,9 +371,9 @@ func (d *Datasource) SetConn(value *sqlx.DB) *Datasource {
 	return d
 }
 
-// SetWrap safely updates the wrapify.R instance (which holds connection status and error info)
+// SetState safely updates the wrapify.R instance (which holds connection status and error info)
 // of the Datasource and returns the updated Datasource.
-func (d *Datasource) SetWrap(value wrapify.R) *Datasource {
+func (d *Datasource) SetState(value wrapify.R) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.wrap = value
