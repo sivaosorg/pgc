@@ -93,7 +93,7 @@ if client.IsConnected() {
     fmt.Println("Connected to PostgreSQL!")
 } else {
     fmt.Println("Failed to connect to PostgreSQL.")
-    fmt.Println(client.Wrap().Cause().Error()) // root cause error
+    fmt.Println(client.State().Cause().Error()) // root cause error
 }
 ```
 
@@ -225,9 +225,9 @@ func main() {
 	client := pgc.NewClient(*conf)
 	// check connection status
 	if client.IsConnected() {
-		fmt.Println(client.Wrap().Message())
+		fmt.Println(client.State().Message())
 	} else {
-		fmt.Println(client.Wrap().Cause().Error())
+		fmt.Println(client.State().Cause().Error())
 		return
 	}
 
@@ -310,9 +310,9 @@ func main() {
 	client := pgc.NewClient(*conf)
 	// check connection status
 	if client.IsConnected() {
-		fmt.Println(client.Wrap().Message())
+		fmt.Println(client.State().Message())
 	} else {
-		fmt.Println(client.Wrap().Cause().Error())
+		fmt.Println(client.State().Cause().Error())
 		return
 	}
 
