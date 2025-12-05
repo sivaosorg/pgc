@@ -109,7 +109,19 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 		return procedures, d.State()
 	}
 
-	err := d.Conn().Select(&procedures, "SELECT routine_name FROM information_schema.routines WHERE routine_catalog = $1 AND routine_schema = 'public' AND routine_type = 'PROCEDURE'", d.conf.Database())
+	query := `
+	SELECT routine_name FROM information_schema.routines 
+	WHERE routine_catalog = $1 
+	AND routine_schema = 'public' 
+	AND routine_type = 'PROCEDURE'
+	`
+
+	// Start inspection
+	done := d.inspectQuery("Procedures", query, d.conf.Database())
+	err := d.Conn().Select(&procedures, query, d.conf.Database())
+	// End inspection
+	done()
+
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
 		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
