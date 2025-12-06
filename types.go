@@ -202,6 +202,11 @@ type Datasource struct {
 	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
 	on_event func(event EventKey, level EventLevel, response wrapify.R)
+
+	// eventBus is an optional EventBus instance for publish-subscribe event handling.
+	// When set, datasource events are published to the EventBus in addition to the legacy callback mechanisms.
+	// This provides a more flexible, decoupled event handling system with topic-based filtering and multiple subscribers.
+	eventBus *EventBus
 }
 
 type Transaction struct {

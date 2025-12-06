@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -298,13 +299,73 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 // invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
 // to dispatch_event external components of significant events (e.g., transaction starts, commits, rollbacks)
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
+// If an EventBus is configured, the event is also published to it.
 func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
 	d.mu.RLock()
 	callback := d.on_event
+	bus := d.eventBus
 	d.mu.RUnlock()
+
+	// Legacy callback support
 	if callback != nil {
 		go callback(event, level, response)
 	}
+
+	// EventBus support (opt-in)
+	if bus != nil {
+		topic := d.eventKeyToTopic(event)
+		e := NewEventBuilder().
+			WithTopic(topic).
+			WithKey(event).
+			WithLevel(level).
+			WithResponse(response).
+			WithDatasource(d).
+			Build()
+		bus.Publish(e)
+	}
+}
+
+// eventKeyToTopic maps an EventKey to an EventTopic.
+// This provides a sensible default mapping for datasource events.
+func (d *Datasource) eventKeyToTopic(key EventKey) EventTopic {
+	// Check for specific key mappings first
+	switch key {
+	case EventTxBegin:
+		return TopicTransactionBegin
+	case EventTxCommit:
+		return TopicTransactionCommit
+	case EventConnOpen:
+		return TopicConnectionOpen
+	case EventConnClose:
+		return TopicConnectionClose
+	case EventConnRetry:
+		return TopicConnectionRetry
+	case EventConnPing:
+		return TopicConnectionHealth
+	case EventQueryInspect:
+		return TopicQuery
+	}
+
+	// Fall back to prefix-based categorization
+	keyStr := string(key)
+
+	// Transaction events
+	if strings.HasPrefix(keyStr, "event_tx_") {
+		return TopicTransaction
+	}
+
+	// Connection events
+	if strings.HasPrefix(keyStr, "event_conn_") {
+		return TopicConnection
+	}
+
+	// Query events
+	if strings.Contains(keyStr, "query") {
+		return TopicQuery
+	}
+
+	// Default to all
+	return TopicAll
 }
 
 // inspect records a query inspection and dispatches it to the inspector if enabled.
