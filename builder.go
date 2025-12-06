@@ -200,6 +200,27 @@ func (d *Datasource) IsConnected() bool {
 	return d.State().IsSuccess()
 }
 
+// IsInspectEnabled returns whether query inspection is enabled.
+func (d *Datasource) IsInspectEnabled() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.inspectEnabled
+}
+
+// LastInspect returns the most recent query inspection.
+// Returns nil if no queries have been inspected yet.
+func (d *Datasource) LastInspect() *QueryInspect {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.lastInspect
+}
+
+// ExistLastInspect checks if there is a last inspected query available.
+// Returns true if a last inspected query exists, false otherwise.
+func (d *Datasource) ExistLastInspect() bool {
+	return d.LastInspect() != nil
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Setter Settings
 //_______________________________________________________________________
@@ -416,27 +437,6 @@ func (d *Datasource) DisableInspect() *Datasource {
 	defer d.mu.Unlock()
 	d.inspectEnabled = false
 	return d
-}
-
-// IsInspectEnabled returns whether query inspection is enabled.
-func (d *Datasource) IsInspectEnabled() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.inspectEnabled
-}
-
-// LastInspect returns the most recent query inspection.
-// Returns nil if no queries have been inspected yet.
-func (d *Datasource) LastInspect() *QueryInspect {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.lastInspect
-}
-
-// ExistLastInspect checks if there is a last inspected query available.
-// Returns true if a last inspected query exists, false otherwise.
-func (d *Datasource) ExistLastInspect() bool {
-	return d.LastInspect() != nil
 }
 
 // OnReconnect sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
