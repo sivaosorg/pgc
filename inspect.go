@@ -11,6 +11,18 @@ import (
 )
 
 // Inspect implements the QueryInspector interface for QueryInspectorFunc.
+// It allows a function to be used as a QueryInspector by delegating the inspection
+// call to the underlying function.
+//
+// Parameters:
+//   - query: The QueryInspect struct containing query details to be inspected.
+//
+// Example usage:
+//
+//	inspector := QueryInspectorFunc(func(q QueryInspect) {
+//	    log.Printf("Query executed: %s", q. Completed)
+//	})
+//	inspector.Inspect(queryInspect)
 func (f QueryInspectorFunc) Inspect(query QueryInspect) {
 	f(query)
 }
