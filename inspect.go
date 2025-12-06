@@ -20,7 +20,7 @@ import (
 // Example usage:
 //
 //	inspector := QueryInspectorFunc(func(q QueryInspect) {
-//	    log.Printf("Query executed: %s", q. Completed)
+//	    log.Printf("Query executed: %s", q.Completed())
 //	})
 //	inspector.Inspect(queryInspect)
 func (f QueryInspectorFunc) Inspect(query QueryInspect) {
