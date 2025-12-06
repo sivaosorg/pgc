@@ -205,7 +205,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 				ON r.specific_name = p.specific_name 
 			WHERE r.routine_catalog = $1 
 				AND r.routine_schema = 'public' 
-				AND r.routine_name = $2
+				AND r.routine_name = $2;
 	`
 
 	// Start inspection
