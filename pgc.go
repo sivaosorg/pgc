@@ -85,16 +85,16 @@ func NewClient(conf settings) *Datasource {
 		WithHeader(wrapify.OK).
 		Reply())
 
+	// Set up the query inspector to log executed queries.
+	// This will log the function name, duration, and completed query.
+	datasource.OnInspector(func(ins QueryInspect) {
+		loggy.Infof("[SQL.inspector] %s | %v | %s", ins.FuncName(), ins.Duration(), ins.Completed())
+	})
+
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
 		datasource.keepalive()
 	}
-
-	// Set up the query inspector to log executed queries.
-	// This will log the function name, duration, and completed query.
-	datasource.OnInspector(func(ins QueryInspect) {
-		loggy.Infof("[SQL] %s | %v | %s", ins.FuncName(), ins.Duration(), ins.Completed())
-	})
 
 	return datasource
 }
@@ -330,7 +330,7 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 	// Invoke the inspector callback if it is set
 	ins := d.getInspector()
 	if ins != nil {
-		ins.Inspect(q)
+		go ins.Inspect(q)
 	}
 
 	response := wrapify.

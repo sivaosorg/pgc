@@ -10,4 +10,4 @@ require (
 	gopkg.in/guregu/null.v3 v3.5.0
 )
 
-require github.com/sivaosorg/unify4g v0.0.2 // indirect
+require github.com/sivaosorg/unify4g v0.0.2
