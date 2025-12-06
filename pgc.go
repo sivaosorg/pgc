@@ -359,8 +359,8 @@ func (d *Datasource) eventKeyToTopic(key EventKey) EventTopic {
 		return TopicConnection
 	}
 
-	// Query events
-	if strings.Contains(keyStr, "query") {
+	// Query events (use prefix to avoid false matches)
+	if strings.HasPrefix(keyStr, "event_query") {
 		return TopicQuery
 	}
 

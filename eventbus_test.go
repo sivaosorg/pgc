@@ -119,7 +119,9 @@ func TestEventBusPublishAsync(t *testing.T) {
 		WithResponse(wrapify.WrapOk("test", nil).Reply()).
 		Build()
 
-	bus.Publish(event)
+	if !bus.Publish(event) {
+		t.Error("Failed to publish event")
+	}
 
 	// Wait for async delivery
 	wg.Wait()
@@ -193,7 +195,7 @@ func TestEventBusFilter(t *testing.T) {
 	errorEvent := NewEventBuilder().
 		WithTopic(TopicQuery).
 		WithLevel(EventLevelError).
-		WithResponse(wrapify.WrapInternalServerError("error", nil).Reply()).
+		WithResponse(wrapify.WrapInternalServerError("error", nil).WithHeader(wrapify.InternalServerError).Reply()).
 		Build()
 
 	bus.PublishSync(errorEvent)
@@ -316,7 +318,9 @@ func TestEventBusShutdown(t *testing.T) {
 			WithLevel(EventLevelInfo).
 			WithResponse(wrapify.WrapOk("test", nil).Reply()).
 			Build()
-		bus.Publish(event)
+		if !bus.Publish(event) {
+			t.Errorf("Failed to publish event %d", i)
+		}
 	}
 
 	// Shutdown should wait for all events to be processed
@@ -402,6 +406,45 @@ func TestEventKeyToTopic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEventBusDroppedEvents(t *testing.T) {
+	// Create EventBus with small buffer
+	bus := NewEventBusWithConfig(EventBusConfig{
+		WorkerCount: 1,
+		BufferSize:  2,
+	})
+	defer bus.Shutdown()
+
+	// Add blocking subscriber to fill the buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
+	
+	bus.Subscribe(TopicAll, func(event Event) {
+		wg.Wait() // Block until we signal
+	})
+
+	event := NewEventBuilder().
+		WithTopic(TopicQuery).
+		WithLevel(EventLevelInfo).
+		WithResponse(wrapify.WrapOk("test", nil).Reply()).
+		Build()
+
+	// Fill the buffer
+	if !bus.Publish(event) {
+		t.Error("First publish should succeed")
+	}
+	if !bus.Publish(event) {
+		t.Error("Second publish should succeed")
+	}
+
+	// This should be dropped (buffer full)
+	if bus.Publish(event) {
+		t.Error("Third publish should fail (buffer full)")
+	}
+
+	// Unblock subscriber
+	wg.Done()
 }
 
 func BenchmarkEventBusPublish(b *testing.B) {

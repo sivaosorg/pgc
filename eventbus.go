@@ -219,15 +219,20 @@ func (eb *EventBus) UnsubscribeByTopic(topic EventTopic) int {
 
 // Publish publishes an event asynchronously to all matching subscribers.
 // The event is queued in the event channel and delivered by workers.
-func (eb *EventBus) Publish(event Event) {
+// If the event channel is full, the event is silently dropped to avoid blocking.
+// For production use, consider monitoring dropped events or increasing buffer size.
+func (eb *EventBus) Publish(event Event) bool {
 	select {
 	case eb.eventChan <- event:
 		// Event queued successfully
+		return true
 	case <-eb.ctx.Done():
 		// EventBus is shutting down
+		return false
 	default:
-		// Channel is full, drop event (or could block/log)
-		// For production, consider logging this
+		// Channel is full, drop event
+		// Callers can check the return value to detect dropped events
+		return false
 	}
 }
 
@@ -252,10 +257,18 @@ func (eb *EventBus) PublishSync(event Event) {
 	// Deliver to subscribers
 	for _, sub := range matchingSubs {
 		if sub.async {
-			// Queue async subscribers
-			go sub.subscriber(event)
+			// Queue async subscribers with panic recovery
+			go func(s *subscription, e Event) {
+				defer func() {
+					if r := recover(); r != nil {
+						// Subscriber panicked, but we continue processing
+						// In production, this could be logged to an error tracking system
+					}
+				}()
+				s.subscriber(e)
+			}(sub, event)
 		} else {
-			// Call sync subscribers directly
+			// Call sync subscribers directly (caller should handle panics)
 			sub.subscriber(event)
 		}
 	}
@@ -300,7 +313,16 @@ func (eb *EventBus) deliverEvent(event Event) {
 
 				// Deliver to subscriber
 				if sub.async {
-					go sub.subscriber(event)
+					// Async delivery with panic recovery
+					go func(s *subscription, e Event) {
+						defer func() {
+							if r := recover(); r != nil {
+								// Subscriber panicked, but we continue processing
+								// In production, this could be logged to an error tracking system
+							}
+						}()
+						s.subscriber(e)
+					}(sub, event)
 				} else {
 					sub.subscriber(event)
 				}
