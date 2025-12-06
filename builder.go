@@ -229,6 +229,19 @@ func (d *Datasource) getInspector() QueryInspector {
 	return d.inspector
 }
 
+// EventBus returns the EventBus instance associated with the datasource.
+// Returns nil if no EventBus is set.
+func (d *Datasource) EventBus() *EventBus {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.eventBus
+}
+
+// HasEventBus checks if the datasource has an EventBus configured.
+func (d *Datasource) HasEventBus() bool {
+	return d.EventBus() != nil
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Setter Settings
 //_______________________________________________________________________
@@ -491,6 +504,21 @@ func (d *Datasource) OnEvent(fnc func(event EventKey, level EventLevel, response
 //   - The Datasource instance for method chaining.
 func (d *Datasource) OnInspector(fn func(ins QueryInspect)) *Datasource {
 	return d.SetInspector(QueryInspectorFunc(fn))
+}
+
+// SetEventBus sets the EventBus for the datasource.
+// When an EventBus is set, datasource events are published to it.
+//
+// Parameters:
+//   - eventBus: The EventBus instance to use for event publishing.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) SetEventBus(eventBus *EventBus) *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.eventBus = eventBus
+	return d
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾

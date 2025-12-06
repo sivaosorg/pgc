@@ -11,6 +11,7 @@ A Golang Postgresql compass library designed to simplify interactions with Postg
 - **DDL Generation**: Generate Data Definition Language (DDL) scripts for tables, including relationships, constraints, and indexes.
 - **Thread-Safe Operations**: Safe concurrent access to database connections and configurations.
 - **Event Callbacks**: Register callbacks for connection status changes, replica events, and notifications.
+- **EventBus System**: Flexible publish-subscribe event system for decoupled event handling with topic-based filtering, async/sync delivery, and custom filters.
 
 ## Requirements
 
@@ -161,6 +162,46 @@ client.OnReconnect(func(response wrapify.R) {
     }
 })
 ```
+
+#### Using EventBus for Event Handling
+
+The EventBus provides a more flexible, decoupled way to handle datasource events:
+
+```go
+// Create EventBus
+bus := pgc.NewEventBus()
+defer bus.Shutdown() // Always shutdown gracefully
+
+// Attach EventBus to datasource
+client.SetEventBus(bus)
+
+// Subscribe to all events
+bus.Subscribe(pgc.TopicAll, func(event pgc.Event) {
+    fmt.Printf("Event: %s | Level: %s | Message: %s\n",
+        event.Key(),
+        event.Level(),
+        event.Response().Message())
+})
+
+// Subscribe to specific topics (async delivery)
+bus.SubscribeAsync(pgc.TopicQuery, func(event pgc.Event) {
+    fmt.Printf("Query event: %s\n", event.Key())
+})
+
+// Subscribe with custom filter
+errorFilter := func(event pgc.Event) bool {
+    return event.Level() == pgc.EventLevelError
+}
+
+bus.SubscribeWithOptions(pgc.TopicAll, func(event pgc.Event) {
+    fmt.Printf("Error: %s\n", event.Response().Message())
+}, pgc.SubscribeOptions{
+    Async:  true,
+    Filter: errorFilter,
+})
+```
+
+For comprehensive EventBus examples including metrics collection, audit logging, slow query detection, and more, see [docs/EVENTBUS_EXAMPLES.md](docs/EVENTBUS_EXAMPLES.md).
 
 ### API Reference
 
