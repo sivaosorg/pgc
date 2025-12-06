@@ -433,6 +433,12 @@ func (d *Datasource) LastInspect() *QueryInspect {
 	return d.lastInspect
 }
 
+// ExistLastInspect checks if there is a last inspected query available.
+// Returns true if a last inspected query exists, false otherwise.
+func (d *Datasource) ExistLastInspect() bool {
+	return d.LastInspect() != nil
+}
+
 // OnReconnect sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
 // and returns the updated Datasource for method chaining.
 func (d *Datasource) OnReconnect(fnc func(response wrapify.R)) *Datasource {
