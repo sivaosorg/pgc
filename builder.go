@@ -221,6 +221,14 @@ func (d *Datasource) ExistLastInspect() bool {
 	return d.LastInspect() != nil
 }
 
+// getInspector returns the query inspector associated with the datasource.
+// If no inspector is set, it returns nil.
+func (d *Datasource) getInspector() QueryInspector {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.inspector
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Setter Settings
 //_______________________________________________________________________

@@ -328,8 +328,9 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 	d.mu.Unlock()
 
 	// Invoke the inspector callback if it is set
-	if d.inspector != nil {
-		go d.inspector.Inspect(q)
+	ins := d.getInspector()
+	if ins != nil {
+		go ins.Inspect(q)
 	}
 
 	response := wrapify.
