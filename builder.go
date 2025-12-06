@@ -551,6 +551,40 @@ func (l EventLevel) IsSuccess() bool {
 	return l == EventLevelSuccess
 }
 
+// ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Getter Query Inspect
+// _______________________________________________________________________
+
+// Query returns the original SQL query string.
+func (q QueryInspect) Query() string {
+	return q.query
+}
+
+// Args returns the arguments passed to the SQL query.
+func (q QueryInspect) Args() []any {
+	return q.args
+}
+
+// Completed returns the interpolated SQL query with arguments.
+func (q QueryInspect) Completed() string {
+	return q.completed
+}
+
+// ExecutedAt returns the timestamp when the query was executed.
+func (q QueryInspect) ExecutedAt() time.Time {
+	return q.executedAt
+}
+
+// Duration returns the duration taken to execute the query.
+func (q QueryInspect) Duration() time.Duration {
+	return q.duration
+}
+
+// FuncName returns the name of the function that executed the query.
+func (q QueryInspect) FuncName() string {
+	return q.funcName
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Bind Configs
 //_______________________________________________________________________

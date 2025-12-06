@@ -289,17 +289,17 @@ func cleanupQuery(query string) string {
 // newQueryInspect creates a new QueryInspect instance.
 func newQueryInspect(funcName, query string, args []any) QueryInspect {
 	return QueryInspect{
-		Query:      cleanupQuery(query),
-		Args:       args,
-		Completed:  interpolateQuery(query, args),
-		ExecutedAt: time.Now(),
-		FuncName:   funcName,
+		query:      cleanupQuery(query),
+		args:       args,
+		completed:  interpolateQuery(query, args),
+		executedAt: time.Now(),
+		funcName:   funcName,
 	}
 }
 
 // newQueryInspectWithDuration creates a new QueryInspect instance with duration.
 func newQueryInspectWithDuration(funcName, query string, args []any, duration time.Duration) QueryInspect {
 	q := newQueryInspect(funcName, query, args)
-	q.Duration = duration
+	q.duration = duration
 	return q
 }

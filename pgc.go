@@ -93,7 +93,7 @@ func NewClient(conf settings) *Datasource {
 	// Set up the query inspector to log executed queries.
 	// This will log the function name, duration, and completed query.
 	datasource.OnInspector(func(ins QueryInspect) {
-		loggy.Infof("[SQL] %s | %v | %s", ins.FuncName, ins.Duration, ins.Completed)
+		loggy.Infof("[SQL] %s | %v | %s", ins.FuncName(), ins.Duration(), ins.Completed())
 	})
 
 	return datasource

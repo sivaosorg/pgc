@@ -411,19 +411,19 @@ type ColExistsSpecMeta struct {
 // QueryInspect represents the inspection information of an executed SQL query.
 //
 // Fields:
-//   - Query:       The raw SQL query string with placeholders.
-//   - Args:        The arguments passed to the query.
-//   - Completed:   The fully interpolated SQL query with arguments replaced.
-//   - ExecutedAt:  The timestamp when the query was executed.
-//   - Duration:    The duration of the query execution.
-//   - FuncName:    The name of the function that executed the query.
+//   - Query():       The raw SQL query string with placeholders.
+//   - Args():        The arguments passed to the query.
+//   - Completed():   The fully interpolated SQL query with arguments replaced.
+//   - ExecutedAt():  The timestamp when the query was executed.
+//   - Duration():    The duration of the query execution.
+//   - FuncName():    The name of the function that executed the query.
 type QueryInspect struct {
-	Query      string        `json:"query"`
-	Args       []any         `json:"args,omitempty"`
-	Completed  string        `json:"completed"`
-	ExecutedAt time.Time     `json:"executed_at"`
-	Duration   time.Duration `json:"duration,omitempty"`
-	FuncName   string        `json:"func_name,omitempty"`
+	query      string
+	args       []any
+	completed  string
+	executedAt time.Time
+	duration   time.Duration
+	funcName   string
 }
 
 // QueryInspector is an interface for inspecting SQL queries.
