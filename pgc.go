@@ -316,7 +316,7 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 //   - args: The arguments passed to the query.
 //   - duration: The duration taken to execute the query.
 func (d *Datasource) inspect(funcName, query string, args []any, duration time.Duration) {
-	if !d.inspectEnabled {
+	if !d.IsInspectEnabled() {
 		return
 	}
 
@@ -349,7 +349,7 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 //   - query: The SQL query string.
 //   - args: The arguments passed to the query.
 func (d *Datasource) inspectQuery(funcName, query string, args ...any) func() {
-	if !d.inspectEnabled {
+	if !d.IsInspectEnabled() {
 		return func() {}
 	}
 
