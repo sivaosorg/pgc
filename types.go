@@ -261,7 +261,7 @@ type FuncsSpec struct {
 type TableKeysDef struct {
 	Name string `json:"name,omitempty" db:"c_name"`
 	Type string `json:"type,omitempty" db:"type"`
-	Desc string `json:"desc,omitempty" db:"descriptor"`
+	Desc string `json:"desc,omitempty" db:"description"`
 }
 
 // ColsSpec represents metadata information for a column in a PostgreSQL table.

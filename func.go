@@ -630,19 +630,19 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 	}
 
 	query := `
-		SELECT conname AS c_name, 'Primary Key' AS type, '' as descriptor
+		SELECT conname AS c_name, 'Primary Key' AS type, '' as description
 		FROM pg_constraint
 		WHERE conrelid = regclass($1)
 		AND confrelid = 0
 		AND contype = 'p'
 		UNION
-		SELECT conname AS c_name, 'Unique Key' AS type, '' as descriptor
+		SELECT conname AS c_name, 'Unique Key' AS type, '' as description
 		FROM pg_constraint
 		WHERE conrelid = regclass($1)
 		AND confrelid = 0
 		AND contype = 'u'
 		UNION
-		SELECT indexname AS c_name, 'Index' AS type, indexdef as descriptor
+		SELECT indexname AS c_name, 'Index' AS type, indexdef as description
 		FROM pg_indexes
 		WHERE tablename = $1;
 	`
