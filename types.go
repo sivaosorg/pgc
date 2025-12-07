@@ -38,7 +38,7 @@ type WConf struct {
 	User              string        `yaml:"user"`               // Username used to authenticate with the Postgres server.
 	Password          string        `yaml:"password"`           // Password corresponding to the specified user.
 	Database          string        `yaml:"database"`           // Name of the database to connect to.
-	SslMode           string        `yaml:"ssl_mode"`           // SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+	SSLMode           string        `yaml:"ssl_mode"`           // SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
 	ConnTimeout       time.Duration `yaml:"conn_timeout"`       // Duration to wait before timing out a connection attempt (e.g., "30s", "1m").
 	Application       string        `yaml:"application"`        // Name of the application connecting to the database (useful for logging or monitoring).
 	MaxOpenConn       int           `yaml:"max_open_conn"`      // Maximum number of open connections allowed in the connection pool.
@@ -96,8 +96,8 @@ type Datasource struct {
 	on_event func(event EventKey, level EventLevel, response wrapify.R)
 }
 
-// SslmodeVarious represents the SSL mode used for connecting to the database.
-type SslmodeVarious string
+// SSLModeVarious represents the SSL mode used for connecting to the database.
+type SSLModeVarious string
 
 // EventKey represents a unique identifier for events dispatched by the Datasource.
 // It is used to classify and identify specific operations or notifications

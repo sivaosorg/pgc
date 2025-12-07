@@ -276,14 +276,14 @@ func (c *settings) SetDatabase(value string) *settings {
 	return c
 }
 
-// SetSslMode sets the SSL mode (as a string) for the connection and returns the updated Settings.
-func (c *settings) SetSslMode(value string) *settings {
+// SetSSLMode sets the SSL mode (as a string) for the connection and returns the updated Settings.
+func (c *settings) SetSSLMode(value string) *settings {
 	c.sslmode = value
 	return c
 }
 
-// SetSslModeVarious sets the SSL mode using the SslmodeVarious type and returns the updated Settings.
-func (c *settings) SetSslModeVarious(value SslmodeVarious) *settings {
+// SetSSLModeVarious sets the SSL mode using the SSLModeVarious type and returns the updated Settings.
+func (c *settings) SetSSLModeVarious(value SSLModeVarious) *settings {
 	c.sslmode = string(value)
 	return c
 }
@@ -618,7 +618,7 @@ func Bind(c *WConf) *settings {
 		SetUser(c.User).
 		SetPassword(c.Password).
 		SetDatabase(c.Database).
-		SetSslMode(c.SslMode).
+		SetSSLMode(c.SSLMode).
 		SetConnTimeout(c.ConnTimeout).
 		SetApplication(c.Application).
 		SetMaxOpenConn(c.MaxOpenConn).

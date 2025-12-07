@@ -57,7 +57,7 @@ conf.SetEnable(true). // Enables or disables the Postgres connection.
     SetUser("postgres"). // The username for authenticating with the database.
     SetPassword("password"). // The password for the given user.
     SetDatabase("mydb"). // The name of the database to connect to.
-    SetSslMode("disable"). // SetSslModeVarious(pgc.SslmodeDisable).; The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+    SetSSLMode("disable"). // SetSSLModeVarious(pgc.SslmodeDisable).; The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
     SetConnTimeout(30 * time.Second). // The maximum duration to wait when establishing a connection.
     SetMaxOpenConn(10). // The maximum number of open connections allowed in the connection pool.
     SetMaxIdleConn(5). // The maximum number of idle connections maintained in the pool.
@@ -214,7 +214,7 @@ func main() {
 		SetUser("postgres").
 		SetPassword("password").
 		SetDatabase("my_db").
-		SetSslMode("disable").
+		SetSSLMode("disable").
 		SetConnTimeout(30 * time.Second).
 		SetMaxOpenConn(10).
 		SetMaxIdleConn(5).
@@ -299,7 +299,7 @@ func main() {
 		SetUser("postgres").
 		SetPassword("password").
 		SetDatabase("my_db").
-		SetSslMode("disable").
+		SetSSLMode("disable").
 		SetConnTimeout(30 * time.Second).
 		SetMaxOpenConn(10).
 		SetMaxIdleConn(5).
