@@ -51,114 +51,6 @@ type WConf struct {
 	Schema            string        `yaml:"schema"`             // Default database schema to use.
 }
 
-// settings represents the runtime configuration for the PostgreSQL connection.
-//
-// Fields:
-//   - Enabled:         Indicates whether the Postgres connection is enabled.
-//   - Debugging:       Indicates whether debugging mode is enabled.
-//   - Host:              The hostname or IP address of the Postgres server.
-//   - Port:              The port number on which the Postgres server listens.
-//   - User:              The username used to authenticate with the Postgres server.
-//   - Password:          The password corresponding to the specified user.
-//   - Database:          The name of the database to connect to.
-//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
-//   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
-//   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
-//   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
-//   - MaxIdleConn:       The maximum number of idle connections maintained in the pool.
-//   - ConnMaxLifetime:   The maximum lifetime of a connection before it is recycled (e.g., "1h", "30m").
-//   - PingInterval:      The interval between health-check pings to the database.
-//   - KeepAlive:         Enables TCP keepalive to maintain persistent connections.
-//   - ConnectionStrings: Full connection string example; alternative to specifying individual connection parameters.
-//   - Optional:          Set to true if the connection is optional (won't cause the application to fail if unavailable).
-//   - Schema:            Default database schema to use.
-type settings struct {
-	enabled   bool
-	debugging bool
-
-	// The hostname or IP address of the Postgres server (e.g., "127.0.0.1").
-	host string
-
-	// The port number on which the Postgres server is listening (e.g., 5432).
-	port int
-
-	// The username for authenticating with the database.
-	user string
-
-	// The password for the given user.
-	password string
-
-	// The name of the database to connect to.
-	database string
-
-	// The SSL mode to use (options include disable, require, verify-ca, verify-full). e.g: "sslmode=disable"
-	sslmode string
-
-	// Path to the SSL client certificate file (if SSL is enabled).
-	sslcert string
-
-	// Path to the SSL client key file (if SSL is enabled).
-	sslkey string
-
-	// Path to the SSL root certificate file, used to verify the server's certificate.
-	sslrootcert string
-
-	// Maximum wait time (in seconds) for establishing a connection before timing out.
-	connTimeout time.Duration
-
-	// An arbitrary name for the application connecting to Postgres, useful for logging and monitoring purposes.
-	application string
-
-	// The maximum number of open connections to the database.
-	maxOpenConn int
-
-	// The maximum number of connections in the idle connection pool.
-	maxIdleConn int
-
-	// The maximum amount of time a connection may be reused.
-	connMaxLifetime time.Duration
-
-	// Defines the frequency at which the connection is pinged.
-	// This interval is used by the keepalive mechanism to periodically check the health of the
-	// database connection. If a ping fails, a reconnection attempt may be triggered.
-	pingInterval time.Duration
-
-	// Indicates whether automatic keepalive is enabled for the PostgreSQL connection.
-	// When set to true, a background process will periodically ping the database and attempt
-	// to reconnect if the connection is lost.
-	keepalive bool
-
-	// connectionStrings holds the generated connection string used to establish a connection
-	// to the PostgreSQL database. This string typically combines all the configuration parameters
-	// (such as host, port, user, password, database, SSL settings, etc.) into a formatted string
-	// that is recognized by the PostgreSQL driver.
-	connectionStrings string
-
-	// schema specifies the PostgreSQL schema to use by default for this connection.
-	// When the connection is established, this schema is typically set in the search_path,
-	// so that any unqualified table references will resolve to tables within this schema
-	// rather than the default "public" schema.
-	schema string
-
-	// optional indicates whether the database connection is considered optional.
-	// When set to true, the application may tolerate the absence of a database connection
-	// (for example, proceeding without performing database-dependent operations),
-	// whereas a value of false implies that a successful connection is mandatory.
-	optional bool
-}
-
-// SslmodeVarious represents the SSL mode used for connecting to the database.
-type SslmodeVarious string
-
-// EventKey represents a unique identifier for events dispatched by the Datasource.
-// It is used to classify and identify specific operations or notifications
-// when the dispatch_event callback is invoked.
-type EventKey string
-
-// EventLevel represents the severity level of an event.
-// It is used to indicate the importance or type of the event being dispatched.
-type EventLevel string
-
 // Datasource encapsulates the PostgreSQL connection and its associated configuration,
 // connection status, and event callback mechanism. It provides thread-safe access to its fields
 // and supports automatic keepalive and reconnection features.
@@ -203,6 +95,18 @@ type Datasource struct {
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
 	on_event func(event EventKey, level EventLevel, response wrapify.R)
 }
+
+// SslmodeVarious represents the SSL mode used for connecting to the database.
+type SslmodeVarious string
+
+// EventKey represents a unique identifier for events dispatched by the Datasource.
+// It is used to classify and identify specific operations or notifications
+// when the dispatch_event callback is invoked.
+type EventKey string
+
+// EventLevel represents the severity level of an event.
+// It is used to indicate the importance or type of the event being dispatched.
+type EventLevel string
 
 type Transaction struct {
 	// A read-write mutex that ensures safe concurrent access to the Datasource fields.
@@ -434,3 +338,99 @@ type QueryInspector interface {
 
 // QueryInspectorFunc is a function adapter that implements QueryInspector.
 type QueryInspectorFunc func(ins QueryInspect)
+
+// settings represents the runtime configuration for the PostgreSQL connection.
+//
+// Fields:
+//   - Enabled:         Indicates whether the Postgres connection is enabled.
+//   - Debugging:       Indicates whether debugging mode is enabled.
+//   - Host:              The hostname or IP address of the Postgres server.
+//   - Port:              The port number on which the Postgres server listens.
+//   - User:              The username used to authenticate with the Postgres server.
+//   - Password:          The password corresponding to the specified user.
+//   - Database:          The name of the database to connect to.
+//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+//   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
+//   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
+//   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
+//   - MaxIdleConn:       The maximum number of idle connections maintained in the pool.
+//   - ConnMaxLifetime:   The maximum lifetime of a connection before it is recycled (e.g., "1h", "30m").
+//   - PingInterval:      The interval between health-check pings to the database.
+//   - KeepAlive:         Enables TCP keepalive to maintain persistent connections.
+//   - ConnectionStrings: Full connection string example; alternative to specifying individual connection parameters.
+//   - Optional:          Set to true if the connection is optional (won't cause the application to fail if unavailable).
+//   - Schema:            Default database schema to use.
+type settings struct {
+	enabled   bool
+	debugging bool
+
+	// The hostname or IP address of the Postgres server (e.g., "127.0.0.1").
+	host string
+
+	// The port number on which the Postgres server is listening (e.g., 5432).
+	port int
+
+	// The username for authenticating with the database.
+	user string
+
+	// The password for the given user.
+	password string
+
+	// The name of the database to connect to.
+	database string
+
+	// The SSL mode to use (options include disable, require, verify-ca, verify-full). e.g: "sslmode=disable"
+	sslmode string
+
+	// Path to the SSL client certificate file (if SSL is enabled).
+	sslcert string
+
+	// Path to the SSL client key file (if SSL is enabled).
+	sslkey string
+
+	// Path to the SSL root certificate file, used to verify the server's certificate.
+	sslrootcert string
+
+	// Maximum wait time (in seconds) for establishing a connection before timing out.
+	connTimeout time.Duration
+
+	// An arbitrary name for the application connecting to Postgres, useful for logging and monitoring purposes.
+	application string
+
+	// The maximum number of open connections to the database.
+	maxOpenConn int
+
+	// The maximum number of connections in the idle connection pool.
+	maxIdleConn int
+
+	// The maximum amount of time a connection may be reused.
+	connMaxLifetime time.Duration
+
+	// Defines the frequency at which the connection is pinged.
+	// This interval is used by the keepalive mechanism to periodically check the health of the
+	// database connection. If a ping fails, a reconnection attempt may be triggered.
+	pingInterval time.Duration
+
+	// Indicates whether automatic keepalive is enabled for the PostgreSQL connection.
+	// When set to true, a background process will periodically ping the database and attempt
+	// to reconnect if the connection is lost.
+	keepalive bool
+
+	// connectionStrings holds the generated connection string used to establish a connection
+	// to the PostgreSQL database. This string typically combines all the configuration parameters
+	// (such as host, port, user, password, database, SSL settings, etc.) into a formatted string
+	// that is recognized by the PostgreSQL driver.
+	connectionStrings string
+
+	// schema specifies the PostgreSQL schema to use by default for this connection.
+	// When the connection is established, this schema is typically set in the search_path,
+	// so that any unqualified table references will resolve to tables within this schema
+	// rather than the default "public" schema.
+	schema string
+
+	// optional indicates whether the database connection is considered optional.
+	// When set to true, the application may tolerate the absence of a database connection
+	// (for example, proceeding without performing database-dependent operations),
+	// whereas a value of false implies that a successful connection is mandatory.
+	optional bool
+}
