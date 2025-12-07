@@ -2,26 +2,28 @@ package pgc
 
 import "time"
 
+// SSL modes for PostgreSQL connections.
 const (
-	// SslmodeDisable disables SSL.
+	// SSLModeDisable disables SSL.
 	// In this mode, SSL is not used at all, and the connection is established in plain text.
-	SslmodeDisable SSLModeVarious = "disable"
+	SSLModeDisable SSLModeVarious = "disable"
 
-	// SslmodeRequire requires SSL.
+	// SSLModeRequire requires SSL.
 	// In this mode, the connection is encrypted using SSL, but the server's certificate is not verified.
-	SslmodeRequire SSLModeVarious = "require"
+	SSLModeRequire SSLModeVarious = "require"
 
-	// SslmodeVerifyCa enables SSL and verifies the certificate authority (CA).
+	// SSLModeVerifyCa enables SSL and verifies the certificate authority (CA).
 	// In this mode, the connection is encrypted, and the server's certificate is verified to be signed by a trusted CA.
 	// However, the host name in the certificate is not checked.
-	SslmodeVerifyCa SSLModeVarious = "verify-ca"
+	SSLModeVerifyCa SSLModeVarious = "verify-ca"
 
-	// SslmodeVerifyFull enables full SSL verification.
+	// SSLModeVerifyFull enables full SSL verification.
 	// In this mode, the connection is encrypted, the server's certificate is verified to be signed by a trusted CA,
 	// and the host name in the certificate is also validated against the server's host name.
-	SslmodeVerifyFull SSLModeVarious = "verify-full"
+	SSLModeVerifyFull SSLModeVarious = "verify-full"
 )
 
+// defaultPingInterval defines the default interval for pinging the database connection.
 const (
 	// defaultPingInterval defines the frequency at which the connection is pinged.
 	defaultPingInterval = 30 * time.Second
