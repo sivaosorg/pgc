@@ -43,14 +43,17 @@ func DefaultReconnectChain() func(response wrapify.R, chain *Datasource) {
 			loggy.Infof("[pgc.reconnect] request_id=%s | state=connected | status=%s | latency=%v | pool_config={max_idle: %d, max_open: %d, max_lifetime: %v} | msg=%s",
 				response.Meta().RequestID(),
 				response.Reply().StatusText(),
-				response.Debugging()["executed_in"],
+				chain.State().OnKeyDebugging("ping_executed_in"),
 				chain.conf.MaxIdleConn(),
 				chain.conf.MaxOpenConn(),
 				chain.conf.ConnMaxLifetime(),
 				response.Message())
 		}
 		if response.IsError() {
-			loggy.Errorf("[pgc.reconnect] state=disconnected | error_class=%T | root_cause=%v | diagnostic_context=%v | recovery_hint=%s",
+			loggy.Errorf("[pgc.reconnect] request_id=%s | state=disconnected | status=%s | latency=%v | error_class=%T | root_cause=%v | diagnostic_context=%v | recovery_hint=%s",
+				response.Meta().RequestID(),
+				response.Reply().StatusText(),
+				chain.State().OnKeyDebugging("reconnect_executed_in"),
 				response.Cause(),
 				response.Error(),
 				response.Debugging(),

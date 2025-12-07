@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/sivaosorg/loggy"
 	"github.com/sivaosorg/wrapify"
 
 	_ "github.com/lib/pq"
@@ -85,11 +84,9 @@ func NewClient(conf settings) *Datasource {
 		WithHeader(wrapify.OK).
 		Reply())
 
-	// Set up the query inspector to log executed queries.
-	// This will log the function name, duration, and completed query.
-	datasource.OnInspector(func(ins QueryInspect) {
-		loggy.Infof("[SQL.inspector] %s | %v | %s", ins.FuncName(), ins.Duration(), ins.Completed())
-	})
+	// Register default chain callbacks for connection lifecycle and query observability.
+	datasource.OnReconnectChain(DefaultReconnectChain())
+	datasource.OnInspector(DefaultInspectorChain())
 
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
