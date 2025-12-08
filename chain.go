@@ -1,7 +1,6 @@
 package pgc
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sivaosorg/loggy"
@@ -179,8 +178,8 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 //
 // Log Output Format:
 //
-//	[pgc.event] event=<event_key> | level=<severity> | request_id=<uuid> |
-//	status=<status_text> | msg=<message>
+//	[pgc.event] event=<event_key> | request_id=<uuid> |
+//	status=<status_text> | message=<message>
 //
 // Supported Event Categories:
 //   - Transaction events: begin, commit, rollback, savepoint
@@ -190,56 +189,22 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 //   - Query events: inspection
 func DefaultEventCallback() func(event EventKey, level EventLevel, response wrapify.R) {
 	return func(event EventKey, level EventLevel, response wrapify.R) {
-		msg := formatEventLog(event, level, response)
 		switch level {
-		case EventLevelError:
-			loggy.Errorf(msg)
-		case EventLevelWarn:
-			loggy.Warnf(msg)
 		case EventLevelDebug:
-			loggy.Debugf(msg)
-		case EventLevelSuccess:
-			loggy.Infof(msg)
+			loggy.Debugf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
+				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+		case EventLevelInfo:
+			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
+				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+		case EventLevelWarn:
+			loggy.Warnf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
+				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+		case EventLevelError:
+			loggy.Errorf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
+				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
 		default:
-			loggy.Infof(msg)
+			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
+				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
 		}
 	}
-}
-
-// // formatEventLog formats a standard event log message with essential fields.
-func formatEventLog(event EventKey, level EventLevel, response wrapify.R) string {
-	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status=%s | msg=%s",
-		event.String(),
-		level.String(),
-		response.Meta().RequestID(),
-		response.StatusText(),
-		response.Message())
-}
-
-// // formatEventLogVerbose formats a verbose event log message with comprehensive details.
-// func formatEventLogVerbose(event EventKey, level EventLevel, response wrapify.R) string {
-// 	if response.IsError() && response.Cause() != nil {
-// 		return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status_code=%d | status=%s | error=%v | msg=%s | debug=%v",
-// 			event.String(),
-// 			level.String(),
-// 			response.Meta().RequestID(),
-// 			response.Reply().StatusCode(),
-// 			response.Reply().StatusText(),
-// 			response.Cause().Error(),
-// 			response.Message(),
-// 			response.Debugging())
-// 	}
-// 	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status_code=%d | status=%s | msg=%s | debug=%v",
-// 		event.String(),
-// 		level.String(),
-// 		response.Meta().RequestID(),
-// 		response.Reply().StatusCode(),
-// 		response.Reply().StatusText(),
-// 		response.Message(),
-// 		response.Debugging())
-// }
-
-// // sprintf is a helper function for formatted string creation.
-func sprintf(format string, args ...any) string {
-	return fmt.Sprintf(format, args...)
 }
