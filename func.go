@@ -775,8 +775,9 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 		return cols, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), cols).WithTotal(len(cols)).Reply()
 	d.dispatch_event(EventTableColsSpec, EventLevelSuccess, response.Reply())
-	return cols, wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), cols).WithTotal(len(cols)).Reply()
+	return cols, response
 }
 
 // TablesByCols searches for tables that contain ALL specified columns.
