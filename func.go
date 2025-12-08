@@ -1182,11 +1182,12 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 		}
 	}
 
-	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
-	return stats, wrapify.WrapOk(
+	response = wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(stats), fullMatchCount, len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
+	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
+	return stats, response
 }
 
 // TablePrivs retrieves the privileges granted on specified tables for specified privilege types.
