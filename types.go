@@ -75,6 +75,10 @@ type Datasource struct {
 	// When true, all executed queries will be inspected and sent to the inspector callback.
 	inspectEnabled bool
 
+	// eventEnabled indicates whether event dispatching is enabled.
+	// When true, events will be dispatched to the on_event callback.
+	eventEnabled bool
+
 	// lastInspect holds the most recent query inspection for debugging purposes.
 	lastInspect *QueryInspect
 

@@ -298,11 +298,14 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
 func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
 	d.mu.RLock()
+	enabled := d.eventEnabled
 	callback := d.on_event
 	d.mu.RUnlock()
-	if callback != nil {
-		go callback(event, level, response)
+	
+	if !enabled || callback == nil {
+		return
 	}
+	go callback(event, level, response)
 }
 
 // inspect records a query inspection and dispatches it to the inspector if enabled.
@@ -314,29 +317,27 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 //   - args: The arguments passed to the query.
 //   - duration: The duration taken to execute the query.
 func (d *Datasource) inspect(funcName, query string, args []any, duration time.Duration) {
-	if !d.IsInspectEnabled() {
-		return
-	}
-
-	// Create a new QueryInspect instance
+	// Create QueryInspect regardless of inspector status (needed for event)
 	q := newQueryInspectWithDuration(funcName, query, args, duration)
 
-	d.mu.Lock()
-	d.lastInspect = &q
-	d.mu.Unlock()
+	// Update lastInspect if inspect is enabled
+	if d.IsInspectEnabled() {
+		d.mu.Lock()
+		d.lastInspect = &q
+		d.mu.Unlock()
 
-	// Invoke the inspector callback if it is set
-	ins := d.getInspector()
-	if ins != nil {
-		go ins.Inspect(q)
+		// Invoke the inspector callback if it is set
+		ins := d.getInspector()
+		if ins != nil {
+			go ins.Inspect(q)
+		}
 	}
 
+	// Dispatch event independently (dispatch_event checks eventEnabled internally)
 	response := wrapify.
 		WrapProcessing("Starting inspection", nil).
 		WithHeader(wrapify.Processing).
 		Reply()
-
-	// Dispatch the inspection event
 	d.dispatch_event(EventQueryInspect, EventLevelDebug, response)
 }
 
@@ -348,7 +349,8 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 //   - query: The SQL query string.
 //   - args: The arguments passed to the query.
 func (d *Datasource) inspectQuery(funcName, query string, args ...any) func() {
-	if !d.IsInspectEnabled() {
+	// Check if either inspect or event is enabled
+	if !d.IsInspectEnabled() && !d.IsEventEnabled() {
 		return func() {}
 	}
 
