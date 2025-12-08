@@ -484,25 +484,16 @@ func (d *Datasource) DisableEvent() *Datasource {
 	return d
 }
 
-// OnReconnect sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
-// and returns the updated Datasource for method chaining.
-func (d *Datasource) OnReconnect(fnc func(response wrapify.R)) *Datasource {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.on_reconnect = fnc
-	return d
-}
-
-// OnReconnectChain sets the callback function that is invoked for events specific to replica connections,
+// OnReconnect sets the callback function that is invoked for events specific to replica connections,
 // such as replica failovers, reconnection attempts, or health status updates.
 // This function accepts a callback that receives both the current status (encapsulated in wrapify.R)
 // and a pointer to the Datasource representing the replica connection (replicator), allowing external
 // components to implement custom logic for replica management. The updated Datasource instance is returned
 // to support method chaining.
-func (d *Datasource) OnReconnectChain(fnc func(response wrapify.R, chain *Datasource)) *Datasource {
+func (d *Datasource) OnReconnect(fnc func(response wrapify.R, chain *Datasource)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.on_reconnect_chain = fnc
+	d.on_reconnect = fnc
 	return d
 }
 

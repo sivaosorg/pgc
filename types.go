@@ -82,16 +82,12 @@ type Datasource struct {
 	// lastInspect holds the most recent query inspection for debugging purposes.
 	lastInspect *QueryInspect
 
-	// A callback function that is invoked asynchronously when there is a change in connection status,
-	//  such as when the connection is lost, re-established, or its health is updated.
-	on_reconnect func(response wrapify.R)
-
-	// on_reconnect_chain is a callback function that is invoked asynchronously to handle events related to replica connections.
+	// on_reconnect is a callback function that is invoked asynchronously to handle events related to replica connections.
 	// When the status of a replica datasource changes (e.g., during failover, reconnection, or health updates),
 	// this function is triggered with the current status (encapsulated in wrapify.R) and a pointer to the Datasource
 	// representing the replica connection. This allows external components to implement replica-specific logic
 	// for tasks such as load balancing, monitoring, or failover handling independently of the primary connection.
-	on_reconnect_chain func(response wrapify.R, chain *Datasource)
+	on_reconnect func(response wrapify.R, chain *Datasource)
 
 	// on_event is an optional callback function used to propagate notifications for significant datasource events.
 	// It is invoked with the current status (encapsulated in wrapify.R) whenever notable events occur,

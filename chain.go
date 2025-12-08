@@ -27,7 +27,7 @@ import (
 //
 // Usage:
 //
-//	datasource.OnReconnectChain(DefaultReconnectChain())
+//	datasource.OnReconnect(DefaultReconnectChain())
 //
 // Log Output Format (Success):
 //
