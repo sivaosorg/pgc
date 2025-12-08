@@ -230,8 +230,9 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 		return fsm, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
 	d.dispatch_event(EventFunctionMetadata, EventLevelSuccess, response.Reply())
-	return fsm, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
+	return fsm, response
 }
 
 // FuncDef retrieves the complete definition of a specified PostgreSQL function.
@@ -286,8 +287,9 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 		return def, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
 	d.dispatch_event(EventFunctionDefinition, EventLevelSuccess, response.Reply())
-	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
+	return def, response
 }
 
 // ProcDef retrieves the complete definition of a specified PostgreSQL procedure.
