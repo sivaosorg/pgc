@@ -1666,10 +1666,12 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 	ces.Stats.TotalExisting = len(ces.Stats.ExistingCols)
 	ces.Stats.TotalMissing = len(ces.Stats.MissingCols)
 
-	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
-	return ces, wrapify.WrapOk(
+	response = wrapify.WrapOk(
 		fmt.Sprintf("Checked %d table-column combination(s) in schema '%s': %d existing, %d missing",
 			ces.Stats.TotalChecked, schema, ces.Stats.TotalExisting, ces.Stats.TotalMissing),
 		ces,
 	).WithTotal(ces.Stats.TotalChecked).Reply()
+
+	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
+	return ces, response
 }
