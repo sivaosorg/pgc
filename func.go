@@ -104,8 +104,9 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 		return functions, response.Reply()
 	}
 
+	response = wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
 	d.dispatch_event(EventFunctionListing, EventLevelSuccess, response.Reply())
-	return functions, wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
+	return functions, response
 }
 
 // Procedures retrieves the names of all stored procedures from the "public" schema of the connected PostgreSQL database.
