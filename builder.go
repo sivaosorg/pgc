@@ -45,23 +45,23 @@ func (c *settings) Database() string {
 	return c.database
 }
 
-// SslMode returns the SSL mode (e.g., disable, require, verify-ca, verify-full) used for the connection.
-func (c *settings) SslMode() string {
+// SSLMode returns the SSL mode (e.g., disable, require, verify-ca, verify-full) used for the connection.
+func (c *settings) SSLMode() string {
 	return c.sslmode
 }
 
-// SslCert returns the path to the SSL client certificate file.
-func (c *settings) SslCert() string {
+// SSLCert returns the path to the SSL client certificate file.
+func (c *settings) SSLCert() string {
 	return c.sslcert
 }
 
-// SslKey returns the path to the SSL client key file.
-func (c *settings) SslKey() string {
+// SSLKey returns the path to the SSL client key file.
+func (c *settings) SSLKey() string {
 	return c.sslkey
 }
 
-// SslRootCert returns the path to the SSL root certificate file used for server certificate verification.
-func (c *settings) SslRootCert() string {
+// SSLRootCert returns the path to the SSL root certificate file used for server certificate verification.
+func (c *settings) SSLRootCert() string {
 	return c.sslrootcert
 }
 
@@ -295,20 +295,20 @@ func (c *settings) SetSSLModeVarious(value SSLModeVarious) *settings {
 	return c
 }
 
-// SetSslCert sets the path to the SSL client certificate and returns the updated Settings.
-func (c *settings) SetSslCert(value string) *settings {
+// SetSSLCert sets the path to the SSL client certificate and returns the updated Settings.
+func (c *settings) SetSSLCert(value string) *settings {
 	c.sslcert = value
 	return c
 }
 
-// SetSslKey sets the path to the SSL client key and returns the updated Settings.
-func (c *settings) SetSslKey(value string) *settings {
+// SetSSLKey sets the path to the SSL client key and returns the updated Settings.
+func (c *settings) SetSSLKey(value string) *settings {
 	c.sslkey = value
 	return c
 }
 
-// SetSslRootCert sets the path to the SSL root certificate and returns the updated Settings.
-func (c *settings) SetSslRootCert(value string) *settings {
+// SetSSLRootCert sets the path to the SSL root certificate and returns the updated Settings.
+func (c *settings) SetSSLRootCert(value string) *settings {
 	c.sslrootcert = value
 	return c
 }

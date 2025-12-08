@@ -19,7 +19,7 @@ import (
 //   - User:              The username used to authenticate with the Postgres server.
 //   - Password:          The password corresponding to the specified user.
 //   - Database:          The name of the database to connect to.
-//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+//   - SSLMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
 //   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
 //   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
 //   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
@@ -353,7 +353,7 @@ type QueryInspectorFunc func(ins QueryInspect)
 //   - User:              The username used to authenticate with the Postgres server.
 //   - Password:          The password corresponding to the specified user.
 //   - Database:          The name of the database to connect to.
-//   - SslMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
+//   - SSLMode:           The SSL mode for the connection (e.g., "disable", "require", "verify-ca", "verify-full").
 //   - ConnTimeout:       The duration to wait before timing out a connection attempt (e.g., "30s", "1m").
 //   - Application:       The name of the application connecting to the database (useful for logging or monitoring).
 //   - MaxOpenConn:       The maximum number of open connections allowed in the connection pool.
