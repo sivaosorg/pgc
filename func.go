@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sivaosorg/loggy"
 	"github.com/sivaosorg/wrapify"
 
 	"github.com/lib/pq"
@@ -568,6 +569,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	if err != nil {
 		// If an error occurs (e.g., no foreign key constraints exist), default to an empty string.
 		fkDDL = ""
+		loggy.Errorf("Error retrieving foreign key constraints for table '%s': %v", table, err)
 	}
 
 	// Retrieve indexes DDL.
@@ -588,6 +590,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	if err != nil {
 		// If an error occurs (e.g., no indexes exist), default to an empty string.
 		indexes = ""
+		loggy.Errorf("Error retrieving indexes for table '%s': %v", table, err)
 	}
 	// Concatenate the various parts of the DDL into one comprehensive script.
 	fullDDL := tableDDL
@@ -604,8 +607,9 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		return ddl, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).WithTotal(1).Reply()
 	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
-	return fullDDL, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).WithTotal(1).Reply()
+	return fullDDL, response
 }
 
 // TableKeys retrieves metadata information for the specified table from the connected PostgreSQL database.
