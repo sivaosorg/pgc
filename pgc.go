@@ -317,28 +317,21 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 //   - args: The arguments passed to the query.
 //   - duration: The duration taken to execute the query.
 func (d *Datasource) inspect(funcName, query string, args []any, duration time.Duration) {
+	if !d.IsInspectEnabled() {
+		return
+	}
 	// Create QueryInspect regardless of inspector status (needed for event)
 	q := newQueryInspectWithDuration(funcName, query, args, duration)
 
-	// Update lastInspect if inspect is enabled
-	if d.IsInspectEnabled() {
-		d.mu.Lock()
-		d.lastInspect = &q
-		d.mu.Unlock()
+	d.mu.Lock()
+	d.lastInspect = &q
+	d.mu.Unlock()
 
-		// Invoke the inspector callback if it is set
-		ins := d.getInspector()
-		if ins != nil {
-			go ins.Inspect(q)
-		}
+	// Invoke the inspector callback if it is set
+	ins := d.getInspector()
+	if ins != nil {
+		go ins.Inspect(q)
 	}
-
-	// Dispatch event independently (dispatch_event checks eventEnabled internally)
-	// response := wrapify.
-	// 	WrapProcessing("Starting inspection", nil).
-	// 	WithHeader(wrapify.Processing).
-	// 	Reply()
-	// d.dispatch_event(EventQueryInspect, EventLevelDebug, response)
 }
 
 // inspectQuery is a helper method to inspect a query with timing.
