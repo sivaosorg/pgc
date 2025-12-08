@@ -427,8 +427,9 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 		return ddl, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).WithTotal(1).Reply()
 	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
-	return ddl, wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).WithTotal(1).Reply()
+	return ddl, response
 }
 
 // TableDefPlus generates a comprehensive Data Definition Language (DDL) script for the specified table,
