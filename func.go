@@ -154,8 +154,10 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
 		return procedures, response.Reply()
 	}
+
+	response = wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
 	d.dispatch_event(EventProcedureListing, EventLevelSuccess, response.Reply())
-	return procedures, wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
+	return procedures, response
 }
 
 // FuncSpec retrieves detailed metadata for a specified function from the PostgreSQL database.
