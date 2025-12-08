@@ -228,6 +228,21 @@ func (d *Datasource) ExistLastInspect() bool {
 	return d.LastInspect() != nil
 }
 
+// PoolStats returns the statistics for event and inspect worker pools.
+//
+// Returns:
+//   - eventStats:   Statistics for the event pool.
+//   - inspectStats: Statistics for the inspect pool.
+func (d *Datasource) PoolStats() (eventStats, inspectStats PoolStats) {
+	if d.eventPool != nil {
+		eventStats = d.eventPool.Stats()
+	}
+	if d.inspectPool != nil {
+		inspectStats = d.inspectPool.Stats()
+	}
+	return
+}
+
 // getInspector returns the query inspector associated with the datasource.
 // If no inspector is set, it returns nil.
 func (d *Datasource) getInspector() QueryInspector {

@@ -35,24 +35,24 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 	query := "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
 
 	// Start inspection
-	done := d.inspect("Tables", query)
+	done := d.Inspect("Tables", query)
 	err := d.Conn().Select(&tables, query)
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of tables", tables).WithErrSck(err)
-		d.dispatch_event(EventTableListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableListing, EventLevelError, response.Reply())
 		return tables, response.Reply()
 	}
 
 	if len(tables) == 0 {
 		response := wrapify.WrapNotFound("No tables found", tables).BindCause()
-		d.dispatch_event(EventTableListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableListing, EventLevelError, response.Reply())
 		return tables, response.Reply()
 	}
 	response = wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
-	d.dispatch_event(EventTableListing, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableListing, EventLevelSuccess, response.Reply())
 	return tables, response
 }
 
@@ -88,25 +88,25 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspect("Functions", query, d.conf.Database())
+	done := d.Inspect("Functions", query, d.conf.Database())
 	err := d.Conn().Select(&functions, query, d.conf.Database())
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of functions", functions).WithErrSck(err)
-		d.dispatch_event(EventFunctionListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionListing, EventLevelError, response.Reply())
 		return functions, response.Reply()
 	}
 
 	if len(functions) == 0 {
 		response := wrapify.WrapNotFound("No functions found", functions).BindCause()
-		d.dispatch_event(EventFunctionListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionListing, EventLevelError, response.Reply())
 		return functions, response.Reply()
 	}
 
 	response = wrapify.WrapOk("Retrieved all functions successfully", functions).WithTotal(len(functions)).Reply()
-	d.dispatch_event(EventFunctionListing, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventFunctionListing, EventLevelSuccess, response.Reply())
 	return functions, response
 }
 
@@ -139,25 +139,25 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspect("Procedures", query, d.conf.Database())
+	done := d.Inspect("Procedures", query, d.conf.Database())
 	err := d.Conn().Select(&procedures, query, d.conf.Database())
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError("An error occurred while retrieving the list of procedures", procedures).WithErrSck(err)
-		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventProcedureListing, EventLevelError, response.Reply())
 		return procedures, response.Reply()
 	}
 
 	if len(procedures) == 0 {
 		response := wrapify.WrapNotFound("No procedures found", procedures).BindCause()
-		d.dispatch_event(EventProcedureListing, EventLevelError, response.Reply())
+		d.dispatchEvent(EventProcedureListing, EventLevelError, response.Reply())
 		return procedures, response.Reply()
 	}
 
 	response = wrapify.WrapOk("Retrieved all procedures successfully", procedures).WithTotal(len(procedures)).Reply()
-	d.dispatch_event(EventProcedureListing, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventProcedureListing, EventLevelSuccess, response.Reply())
 	return procedures, response
 }
 
@@ -195,7 +195,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", fsm).BindCause()
-		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
@@ -214,25 +214,25 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 	`
 
 	// Start inspection
-	done := d.inspect("FuncSpec", query, d.conf.Database(), function)
+	done := d.Inspect("FuncSpec", query, d.conf.Database(), function)
 	err := d.Conn().Select(&fsm, query, d.conf.Database(), function)
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), fsm).WithErrSck(err)
-		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
 	if len(fsm) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), fsm).BindCause()
-		d.dispatch_event(EventFunctionMetadata, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionMetadata, EventLevelError, response.Reply())
 		return fsm, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), fsm).WithTotal(len(fsm)).Reply()
-	d.dispatch_event(EventFunctionMetadata, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventFunctionMetadata, EventLevelSuccess, response.Reply())
 	return fsm, response
 }
 
@@ -264,32 +264,32 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 	}
 	if isEmpty(function) {
 		response := wrapify.WrapBadRequest("Function name is required", def).BindCause()
-		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	query := "SELECT pg_get_functiondef($1::regproc)"
 
 	// Start inspection
-	done := d.inspect("FuncDef", query, function)
+	done := d.Inspect("FuncDef", query, function)
 	err := d.Conn().QueryRow(query, function).Scan(&def)
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the function '%s' metadata", function), def).WithErrSck(err)
-		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	if isEmpty(def) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Function '%s' not found", function), def).BindCause()
-		d.dispatch_event(EventFunctionDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventFunctionDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Retrieved function '%s' metadata successfully", function), def).WithTotal(1).Reply()
-	d.dispatch_event(EventFunctionDefinition, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventFunctionDefinition, EventLevelSuccess, response.Reply())
 	return def, response
 }
 
@@ -324,7 +324,7 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	}
 	if isEmpty(procedure) {
 		response := wrapify.WrapBadRequest("Procedure name is required", def).BindCause()
-		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
@@ -338,25 +338,25 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	`
 
 	// Start inspection
-	done := d.inspect("ProcDef", query, procedure)
+	done := d.Inspect("ProcDef", query, procedure)
 	err := d.Conn().QueryRow(query, procedure).Scan(&def)
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the procedure '%s' metadata", procedure), def).WithErrSck(err)
-		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	if isEmpty(def) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Procedure '%s' not found", procedure), def).BindCause()
-		d.dispatch_event(EventProcedureDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventProcedureDefinition, EventLevelError, response.Reply())
 		return def, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
-	d.dispatch_event(EventProcedureDefinition, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventProcedureDefinition, EventLevelSuccess, response.Reply())
 	return def, response
 }
 
@@ -387,7 +387,7 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -410,7 +410,7 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspect("TableDef", query, table)
+	done := d.Inspect("TableDef", query, table)
 	err := d.Conn().QueryRow(query, table).Scan(&ddl)
 	// End inspection
 	done()
@@ -418,18 +418,18 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), ddl).
 			WithErrSck(err)
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	if isEmpty(ddl) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), ddl).BindCause()
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' generated successfully", table), ddl).WithTotal(1).Reply()
-	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableDefinition, EventLevelSuccess, response.Reply())
 	return ddl, response
 }
 
@@ -465,7 +465,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", ddl).BindCause()
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -523,7 +523,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		GROUP BY c.relname;
 	`
 	// Start inspection
-	done := d.inspect("TableDefPlus-ddl", ddlQuery, table)
+	done := d.Inspect("TableDefPlus-ddl", ddlQuery, table)
 	err := d.Conn().QueryRow(ddlQuery, table).Scan(&tableDDL)
 	// End inspection
 	done()
@@ -531,13 +531,13 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while generating the table definition for table '%s'", table), tableDDL).
 			WithErrSck(err)
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	if isEmpty(tableDDL) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), tableDDL).BindCause()
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
@@ -561,7 +561,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		) sub;
 	`
 	// Start inspection
-	done = d.inspect("TableDefPlus-fk", fkQuery, table)
+	done = d.Inspect("TableDefPlus-fk", fkQuery, table)
 	err = d.Conn().QueryRow(fkQuery, table).Scan(&fkDDL)
 	// End inspection
 	done()
@@ -582,7 +582,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	`
 
 	// Start inspection
-	done = d.inspect("TableDefPlus-indexes", indexQuery, table)
+	done = d.Inspect("TableDefPlus-indexes", indexQuery, table)
 	err = d.Conn().QueryRow(indexQuery, table).Scan(&indexes)
 	// End inspection
 	done()
@@ -603,12 +603,12 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 
 	if isEmpty(fullDDL) {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), fullDDL).BindCause()
-		d.dispatch_event(EventTableDefinition, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableDefinition, EventLevelError, response.Reply())
 		return ddl, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Table definition for table '%s' including relationships, constraints, and indexes", table), fullDDL).WithTotal(1).Reply()
-	d.dispatch_event(EventTableDefinition, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableDefinition, EventLevelSuccess, response.Reply())
 	return fullDDL, response
 }
 
@@ -640,7 +640,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 	}
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", keys).BindCause()
-		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
@@ -662,7 +662,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		WHERE tablename = $1;
 	`
 	// Start inspection
-	done := d.inspect("TableKeys", query, table)
+	done := d.Inspect("TableKeys", query, table)
 	rows, err := d.Conn().Query(query, table)
 	// End inspection
 	done()
@@ -677,7 +677,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		var m TableKeysDef
 		if err := rows.Scan(&m.Name, &m.Type, &m.Desc); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning rows the table '%s' metadata", table), nil).WithErrSck(err)
-			d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableKeysIndexes, EventLevelError, response.Reply())
 			return keys, response.Reply()
 		}
 		keys = append(keys, m)
@@ -685,17 +685,17 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows the table '%s' metadata", table), nil).WithErrSck(err)
-		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
 	if len(keys) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), keys).BindCause()
-		d.dispatch_event(EventTableKeysIndexes, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableKeysIndexes, EventLevelError, response.Reply())
 		return keys, response.Reply()
 	}
 
-	d.dispatch_event(EventTableKeysIndexes, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableKeysIndexes, EventLevelSuccess, response.Reply())
 	return keys, wrapify.WrapOk(fmt.Sprintf("Retrieved table '%s' keys and indexes metadata successfully", table), keys).WithTotal(len(keys)).Reply()
 }
 
@@ -725,7 +725,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 
 	if isEmpty(table) {
 		response := wrapify.WrapBadRequest("Table name is required", cols).BindCause()
-		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
@@ -741,14 +741,14 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 	`
 
 	// Start inspection
-	done := d.inspect("ColsSpec", query, table)
+	done := d.Inspect("ColsSpec", query, table)
 	rows, err := d.Conn().Query(query, table)
 	// End inspection
 	done()
 
 	if err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving the columns metadata by table '%s'", table), nil).WithErrSck(err)
-		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 	defer rows.Close()
@@ -757,7 +757,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 		var m ColsSpec
 		if err := rows.Scan(&m.Column, &m.Type, &m.MaxLength); err != nil {
 			response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while scanning the columns metadata by table '%s' ", table), nil).WithErrSck(err)
-			d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableColsSpec, EventLevelError, response.Reply())
 			return cols, response.Reply()
 		}
 		cols = append(cols, m)
@@ -765,18 +765,18 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 
 	if err := rows.Err(); err != nil {
 		response := wrapify.WrapInternalServerError(fmt.Sprintf("An error occurred while retrieving rows and mapping the columns' metadata for the table '%s'", table), nil).WithErrSck(err)
-		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
 	if len(cols) == 0 {
 		response := wrapify.WrapNotFound(fmt.Sprintf("Table '%s' not found", table), cols).BindCause()
-		d.dispatch_event(EventTableColsSpec, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsSpec, EventLevelError, response.Reply())
 		return cols, response.Reply()
 	}
 
 	response = wrapify.WrapOk(fmt.Sprintf("Retrieved columns metadata by table '%s' successfully", table), cols).WithTotal(len(cols)).Reply()
-	d.dispatch_event(EventTableColsSpec, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableColsSpec, EventLevelSuccess, response.Reply())
 	return cols, response
 }
 
@@ -799,7 +799,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -818,7 +818,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 	`
 
 	// Start inspection
-	done := d.inspect("TablesByCols", query, pq.Array(columns), len(columns))
+	done := d.Inspect("TablesByCols", query, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns), len(columns))
 	// End inspection
 	done()
@@ -828,7 +828,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -841,7 +841,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -855,7 +855,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -864,7 +864,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 			fmt.Sprintf("No tables found containing all specified columns '%v'", strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -872,7 +872,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 		fmt.Sprintf("Found %d table(s) containing all %d specified column(s)", len(stats), len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
-	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableSearchByCols, EventLevelSuccess, response.Reply())
 	return stats, response
 }
 
@@ -895,7 +895,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -912,7 +912,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 	`
 
 	// Start inspection
-	done := d.inspect("TablesByColsIn", query, pq.Array(columns))
+	done := d.Inspect("TablesByColsIn", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
 	// End inspection
 	done()
@@ -922,7 +922,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("An error occurred while searching for tables with any columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -935,7 +935,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -949,7 +949,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -958,7 +958,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 			fmt.Sprintf("No tables found containing any of the specified columns '%v'", strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		d.dispatch_event(EventTableSearchByAnyCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByAnyCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -966,7 +966,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 		fmt.Sprintf("Found %d table(s) containing at least one of %d specified column(s)", len(stats), len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
-	d.dispatch_event(EventTableSearchByAnyCols, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableSearchByAnyCols, EventLevelSuccess, response.Reply())
 	return stats, response
 }
 
@@ -984,7 +984,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1002,7 +1002,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	`
 
 	// Start inspection
-	done := d.inspect("TablesByColsIn", query, schema, pq.Array(columns), len(columns))
+	done := d.Inspect("TablesByColsIn", query, schema, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, schema, pq.Array(columns), len(columns))
 	// End inspection
 	done()
@@ -1012,7 +1012,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("An error occurred while searching for tables with columns %v in schema '%s'", columns, schema),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -1025,7 +1025,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 				fmt.Sprintf("An error occurred while scanning results for columns %v in schema '%s'", columns, schema),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTablesByColsIn, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 		r.MatchedColumns = []string(matchedCols)
@@ -1039,7 +1039,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("An error occurred while iterating results for columns %v in schema '%s'", columns, schema),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1048,7 +1048,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 			fmt.Sprintf("No tables found in schema '%s' containing all specified columns '%v'", schema, strings.Join(columns, ", ")),
 			stats,
 		).BindCause()
-		d.dispatch_event(EventTablesByColsIn, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablesByColsIn, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1056,7 +1056,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(stats), schema, len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
-	d.dispatch_event(EventTablesByColsIn, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTablesByColsIn, EventLevelSuccess, response.Reply())
 	return stats, response
 }
 
@@ -1076,7 +1076,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 	}
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for search", nil).BindCause()
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1095,7 +1095,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 	`
 
 	// Start inspection
-	done := d.inspect("TablesByColsPlus", query, pq.Array(columns))
+	done := d.Inspect("TablesByColsPlus", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
 	// End inspection
 	done()
@@ -1105,7 +1105,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 			fmt.Sprintf("An error occurred while searching for tables with columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 	defer rows.Close()
@@ -1119,7 +1119,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 				fmt.Sprintf("An error occurred while scanning results for columns %v", columns),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 			return stats, response.Reply()
 		}
 
@@ -1140,7 +1140,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 			fmt.Sprintf("An error occurred while iterating results for columns %v", columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableSearchByCols, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableSearchByCols, EventLevelError, response.Reply())
 		return stats, response.Reply()
 	}
 
@@ -1186,7 +1186,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 		fmt.Sprintf("Found %d table(s) with matches (%d full match(es)) for %d column(s)", len(stats), fullMatchCount, len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
-	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableSearchByCols, EventLevelSuccess, response.Reply())
 	return stats, response
 }
 
@@ -1210,13 +1210,13 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if len(privileges) == 0 {
 		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1235,7 +1235,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 	`
 
 	// Start inspection
-	done := d.inspect("TablePrivs", query, pq.Array(tables), pq.Array(normalizedPrivileges))
+	done := d.Inspect("TablePrivs", query, pq.Array(tables), pq.Array(normalizedPrivileges))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges))
 	// End inspection
 	done()
@@ -1245,7 +1245,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 	defer rows.Close()
@@ -1260,7 +1260,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 			return privs_spec, response.Reply()
 		}
 		privs_spec.Privileges = append(privs_spec.Privileges, priv)
@@ -1272,7 +1272,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1299,7 +1299,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 			len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
 		privs_spec,
 	).WithTotal(len(privs_spec.Privileges)).Reply()
-	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTablePrivileges, EventLevelSuccess, response.Reply())
 	return privs_spec, response
 }
 
@@ -1338,19 +1338,19 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for privilege check", nil).BindCause()
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if len(privileges) == 0 {
 		response := wrapify.WrapBadRequest("No privilege types provided for check", nil).BindCause()
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
 	if isEmpty(grantee) {
 		response := wrapify.WrapBadRequest("Grantee (user/role) name is required", nil).BindCause()
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1370,7 +1370,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 	`
 
 	// Start inspection
-	done := d.inspect("TablePrivsByUser", query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
+	done := d.Inspect("TablePrivsByUser", query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
 	// End inspection
 	done()
@@ -1380,7 +1380,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 			fmt.Sprintf("An error occurred while retrieving privileges for tables %v and grantee '%s'", tables, grantee),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 	defer rows.Close()
@@ -1395,7 +1395,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 				fmt.Sprintf("An error occurred while scanning privilege results for tables %v", tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 			return privs_spec, response.Reply()
 		}
 		privs_spec.Privileges = append(privs_spec.Privileges, priv)
@@ -1407,7 +1407,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 			fmt.Sprintf("An error occurred while iterating privilege results for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTablePrivileges, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTablePrivileges, EventLevelError, response.Reply())
 		return privs_spec, response.Reply()
 	}
 
@@ -1434,7 +1434,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 			grantee, len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
 		privs_spec,
 	).WithTotal(len(privs_spec.Privileges)).Reply()
-	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTablePrivileges, EventLevelSuccess, response.Reply())
 	return privs_spec, response
 }
 
@@ -1461,13 +1461,13 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for column existence check", nil).BindCause()
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for existence check", nil).BindCause()
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
@@ -1495,7 +1495,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 	`
 
 	// Start inspection
-	done := d.inspect("ColsExists", query, pq.Array(tables), pq.Array(columns))
+	done := d.Inspect("ColsExists", query, pq.Array(tables), pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns))
 	// End inspection
 	done()
@@ -1505,7 +1505,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 			fmt.Sprintf("An error occurred while checking column existence for tables %v and columns %v", tables, columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 	defer rows.Close()
@@ -1517,7 +1517,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 				fmt.Sprintf("An error occurred while scanning column existence results for tables %v", tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 			return ces, response.Reply()
 		}
 
@@ -1537,7 +1537,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 			fmt.Sprintf("An error occurred while iterating column existence results for tables %v", tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
@@ -1552,7 +1552,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 		ces,
 	).WithTotal(ces.Stats.TotalChecked).Reply()
 
-	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableColsExists, EventLevelSuccess, response.Reply())
 	return ces, response
 }
 
@@ -1575,19 +1575,19 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 
 	if isEmpty(schema) {
 		response := wrapify.WrapBadRequest("Schema name is required", nil).BindCause()
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
 	if len(tables) == 0 {
 		response := wrapify.WrapBadRequest("No tables provided for column existence check", nil).BindCause()
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
 	if len(columns) == 0 {
 		response := wrapify.WrapBadRequest("No columns provided for existence check", nil).BindCause()
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
@@ -1615,7 +1615,7 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 	`
 
 	// Start inspection
-	done := d.inspect("ColsExistsIn", query, pq.Array(tables), pq.Array(columns), schema)
+	done := d.Inspect("ColsExistsIn", query, pq.Array(tables), pq.Array(columns), schema)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns), schema)
 	// End inspection
 	done()
@@ -1625,7 +1625,7 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 			fmt.Sprintf("An error occurred while checking column existence in schema '%s' for tables %v and columns %v", schema, tables, columns),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 	defer rows.Close()
@@ -1637,7 +1637,7 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 				fmt.Sprintf("An error occurred while scanning column existence results in schema '%s' for tables %v", schema, tables),
 				nil,
 			).WithErrSck(err)
-			d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+			d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 			return ces, response.Reply()
 		}
 
@@ -1657,7 +1657,7 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 			fmt.Sprintf("An error occurred while iterating column existence results in schema '%s' for tables %v", schema, tables),
 			nil,
 		).WithErrSck(err)
-		d.dispatch_event(EventTableColsExists, EventLevelError, response.Reply())
+		d.dispatchEvent(EventTableColsExists, EventLevelError, response.Reply())
 		return ces, response.Reply()
 	}
 
@@ -1672,6 +1672,6 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 		ces,
 	).WithTotal(ces.Stats.TotalChecked).Reply()
 
-	d.dispatch_event(EventTableColsExists, EventLevelSuccess, response.Reply())
+	d.dispatchEvent(EventTableColsExists, EventLevelSuccess, response.Reply())
 	return ces, response
 }

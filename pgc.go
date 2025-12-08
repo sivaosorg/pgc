@@ -90,6 +90,9 @@ func NewClient(conf settings) *Datasource {
 	datasource.OnInspector(DefaultInspectorChain())
 	datasource.OnEvent(DefaultEventCallbackChain())
 
+	// Initialize worker pools for async dispatching
+	datasource.initPools()
+
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
 		datasource.keepalive()
@@ -105,7 +108,7 @@ func NewClient(conf settings) *Datasource {
 func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 	if !d.IsConnected() {
 		response := wrapify.WrapServiceUnavailable("Datasource is not connected", nil).BindCause().WithHeader(wrapify.ServiceUnavailable).Reply()
-		d.dispatch_event(EventConnClose, EventLevelError, response)
+		d.dispatchEvent(EventConnClose, EventLevelError, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -115,12 +118,12 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		return t
 	}
 
-	d.dispatch_event(EventTxBegin, EventLevelInfo, wrapify.WrapProcessing("Starting transaction", nil).WithHeader(wrapify.Processing).Reply())
+	d.dispatchEvent(EventTxBegin, EventLevelInfo, wrapify.WrapProcessing("Starting transaction", nil).WithHeader(wrapify.Processing).Reply())
 
 	tx, err := d.Conn().BeginTxx(ctx, nil)
 	if err != nil {
 		response := wrapify.WrapInternalServerError("Failed to start transaction", nil).WithHeader(wrapify.InternalServerError).WithErrSck(err).Reply()
-		d.dispatch_event(EventTxStartedAbort, EventLevelError, response)
+		d.dispatchEvent(EventTxStartedAbort, EventLevelError, response)
 		t := &Transaction{
 			ds:     d,
 			tx:     nil,
@@ -136,8 +139,69 @@ func (d *Datasource) BeginTx(ctx context.Context) *Transaction {
 		active: true,
 		wrap:   response,
 	}
-	d.dispatch_event(EventTxStarted, EventLevelSuccess, response)
+	d.dispatchEvent(EventTxStarted, EventLevelSuccess, response)
 	return t
+}
+
+// Close releases all resources associated with the Datasource,
+// including stopping worker pools and closing the database connection.
+//
+// Returns:
+//   - An error if closing the connection fails.
+func (d *Datasource) Close() error {
+	// Stop worker pools gracefully
+	if d.eventPool != nil {
+		if !d.eventPool.Stop() {
+			loggy.Warn("[pgc.event] event pool shutdown timed out")
+		}
+	}
+	if d.inspectPool != nil {
+		if !d.inspectPool.Stop() {
+			loggy.Warn("[pgc.inspect] inspect pool shutdown timed out")
+		}
+	}
+
+	// Close database connection
+	d.mu.Lock()
+	conn := d.conn
+	d.mu.Unlock()
+
+	if conn != nil {
+		return conn.Close()
+	}
+	return nil
+}
+
+// Inspect is a helper method to Inspect a query with timing.
+// It returns a function that should be called after the query completes.
+//
+// Parameters:
+//   - funcName: The name of the function executing the query.
+//   - query: The SQL query string.
+//   - args: The arguments passed to the query.
+func (d *Datasource) Inspect(funcName, query string, args ...any) func() {
+	if !d.IsInspectEnabled() {
+		return func() {}
+	}
+
+	start := time.Now()
+	return func() {
+		d.dispatchInspector(funcName, query, args, time.Since(start))
+	}
+}
+
+// initPools initializes the worker pools for event and inspection dispatching.
+// Both pools are started automatically after creation.
+func (d *Datasource) initPools() {
+	eventConf := DefaultPoolConf()
+	eventConf.SetWorkers(4).SetQueueSize(2048).SetDropOnFull(true)
+	d.eventPool = NewPool(eventConf)
+	d.eventPool.Start()
+
+	inspectConf := DefaultPoolConf()
+	inspectConf.SetWorkers(2).SetQueueSize(1024).SetDropOnFull(true)
+	d.inspectPool = NewPool(inspectConf)
+	d.inspectPool.Start()
 }
 
 // keepalive initiates a background goroutine that periodically pings the PostgreSQL database
@@ -210,7 +274,7 @@ func (d *Datasource) keepalive() {
 					Reply()
 			}
 			d.SetState(response)
-			d.dispatch_reconnect(response, d)
+			d.dispatchReconnect(response, d)
 		}
 	}()
 }
@@ -266,11 +330,43 @@ func (d *Datasource) reconnect() error {
 	return nil
 }
 
-// dispatch_reconnect safely retrieves the registered replica callback function and, if one is set,
+// safeEventCallback executes the event callback with panic recovery.
+//
+// Parameters:
+//   - event:    The event key.
+//   - level:    The event level.
+//   - response: The response to pass to the callback.
+//   - callback: The callback function to execute.
+func (d *Datasource) safeEventCallback(event EventKey, level EventLevel, response wrapify.R, callback func(event EventKey, level EventLevel, response wrapify.R)) {
+	defer func() {
+		if r := recover(); r != nil {
+			loggy.Errorf("[pgc.event] panic recovered in event callback: event=%s, level=%s, error=%v",
+				event.String(), level.String(), r)
+		}
+	}()
+	callback(event, level, response)
+}
+
+// safeInspectorCallback executes the inspector callback with panic recovery.
+//
+// Parameters:
+//   - q:   The QueryInspect data.
+//   - ins: The QueryInspector to invoke.
+func (d *Datasource) safeInspectorCallback(q QueryInspect, ins QueryInspector) {
+	defer func() {
+		if r := recover(); r != nil {
+			loggy.Errorf("[pgc.inspect] panic recovered in inspector callback: func=%s, error=%v",
+				q.FuncName(), r)
+		}
+	}()
+	ins.Inspect(q)
+}
+
+// dispatchReconnect safely retrieves the registered replica callback function and, if one is set,
 // invokes it asynchronously with the provided wrapify.R response and a pointer to the replica Datasource.
 // This ensures that external consumers are notified of replica-specific connection status changes,
 // such as replica failovers, reconnection attempts, or health updates, without blocking the calling goroutine.
-func (d *Datasource) dispatch_reconnect(response wrapify.R, chain *Datasource) {
+func (d *Datasource) dispatchReconnect(response wrapify.R, chain *Datasource) {
 	d.mu.RLock()
 	callback := d.on_reconnect
 	d.mu.RUnlock()
@@ -279,11 +375,14 @@ func (d *Datasource) dispatch_reconnect(response wrapify.R, chain *Datasource) {
 	}
 }
 
-// dispatch_event safely retrieves the registered notifier callback function and, if one is set,
-// invokes it asynchronously with the provided wrapify.R response. This method allows the Datasource
-// to dispatch_event external components of significant events (e.g., transaction starts, commits, rollbacks)
-// without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
-func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
+// dispatchEvent safely dispatches an event to the worker pool for async processing.
+// This method ensures that event handling does not block the calling goroutine.
+//
+// Parameters:
+//   - event:    The event key identifying the type of event.
+//   - level:    The severity level of the event.
+//   - response: The wrapify.R response associated with the event.
+func (d *Datasource) dispatchEvent(event EventKey, level EventLevel, response wrapify.R) {
 	if !d.IsEventEnabled() {
 		return
 	}
@@ -293,58 +392,63 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 		return
 	}
 
-	safeCallback := func() {
-		defer func() {
-			if r := recover(); r != nil {
-				loggy.Errorf("[pgc.event] panic recovered in event callback: event=%s, level=%s, error=%v",
-					event.String(), level.String(), r)
-			}
-		}()
-		callback(event, level, response)
+	// Ensure pool is initialized
+	if d.eventPool == nil || !d.eventPool.IsRunning() {
+		d.safeEventCallback(event, level, response, callback)
+		return
 	}
-	safeCallback()
+
+	// Capture values for closure
+	ev, lv, resp, cb := event, level, response, callback
+
+	submitted := d.eventPool.Submit(func() {
+		d.safeEventCallback(ev, lv, resp, cb)
+	})
+
+	if !submitted {
+		loggy.Warnf("[pgc.event] event dropped due to full queue: event=%s, level=%s",
+			event.String(), level.String())
+	}
 }
 
-// dispatch_inspector records a query inspection and dispatches it to the inspector if enabled.
-// It also updates the lastInspect field with the latest inspection data.
+// dispatchInspector dispatches query inspection to the worker pool for async processing.
+// This ensures that query logging/monitoring does not impact query execution performance.
 //
 // Parameters:
 //   - funcName: The name of the function executing the query.
-//   - query: The SQL query string.
-//   - args: The arguments passed to the query.
+//   - query:    The SQL query string.
+//   - args:     The arguments passed to the query.
 //   - duration: The duration taken to execute the query.
-func (d *Datasource) dispatch_inspector(funcName, query string, args []any, duration time.Duration) {
+func (d *Datasource) dispatchInspector(funcName, query string, args []any, duration time.Duration) {
 	if !d.IsInspectEnabled() {
 		return
 	}
-	// Create QueryInspect regardless of inspector status (needed for event)
+
 	q := newQueryInspectWithDuration(funcName, query, args, duration)
 
 	d.mu.Lock()
 	d.lastInspect = &q
 	d.mu.Unlock()
 
-	// Invoke the inspector callback if it is set
 	ins := d.getInspector()
-	if ins != nil {
-		go ins.Inspect(q)
-	}
-}
-
-// inspect is a helper method to inspect a query with timing.
-// It returns a function that should be called after the query completes.
-//
-// Parameters:
-//   - funcName: The name of the function executing the query.
-//   - query: The SQL query string.
-//   - args: The arguments passed to the query.
-func (d *Datasource) inspect(funcName, query string, args ...any) func() {
-	if !d.IsInspectEnabled() {
-		return func() {}
+	if ins == nil {
+		return
 	}
 
-	start := time.Now()
-	return func() {
-		d.dispatch_inspector(funcName, query, args, time.Since(start))
+	// Ensure pool is initialized
+	if d.inspectPool == nil || !d.inspectPool.IsRunning() {
+		d.safeInspectorCallback(q, ins)
+		return
+	}
+
+	// Capture values for closure
+	inspect, inspector := q, ins
+
+	submitted := d.inspectPool.Submit(func() {
+		d.safeInspectorCallback(inspect, inspector)
+	})
+
+	if !submitted {
+		loggy.Warnf("[pgc.inspect] inspection dropped due to full queue: func=%s", funcName)
 	}
 }

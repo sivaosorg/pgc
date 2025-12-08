@@ -94,6 +94,9 @@ type Datasource struct {
 	// such as reconnection attempts, keepalive signals, or other diagnostic updates.
 	// This allows external components to receive and handle these notifications independently of the primary connection status callback.
 	on_event func(event EventKey, level EventLevel, response wrapify.R)
+
+	eventPool   *Pool // Worker pool for event callbacks
+	inspectPool *Pool // Worker pool for query inspection
 }
 
 // SSLModeVarious represents the SSL mode used for connecting to the database.
