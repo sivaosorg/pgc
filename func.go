@@ -1052,11 +1052,12 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 		return stats, response.Reply()
 	}
 
-	d.dispatch_event(EventTablesByColsIn, EventLevelSuccess, response.Reply())
-	return stats, wrapify.WrapOk(
+	response = wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) in schema '%s' containing all %d specified column(s)", len(stats), schema, len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
+	d.dispatch_event(EventTablesByColsIn, EventLevelSuccess, response.Reply())
+	return stats, response
 }
 
 // TablesByColsPlus searches for tables and returns detailed information about column matches.
