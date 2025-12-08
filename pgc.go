@@ -284,8 +284,6 @@ func (d *Datasource) dispatch_reconnect(response wrapify.R, chain *Datasource) {
 // to dispatch_event external components of significant events (e.g., transaction starts, commits, rollbacks)
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
 func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
-	loggy.Infof("Dispatching event: %s at level: %s, IsEventEnabled: %v",
-		event.String(), level.String(), d.IsEventEnabled())
 	if !d.IsEventEnabled() {
 		return
 	}
@@ -294,11 +292,20 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 	callback := d.on_event
 	d.mu.RUnlock()
 
-	loggy.Infof("Event callback retrieved: %v", callback != nil)
-	if callback != nil {
-		loggy.Infof("Invoking event callback for event: %s", event.String())
-		go callback(event, level, response)
+	if callback == nil {
+		return
 	}
+
+	safeCallback := func() {
+		defer func() {
+			if r := recover(); r != nil {
+				loggy.Errorf("[pgc.event] panic recovered in event callback: event=%s, level=%s, error=%v",
+					event.String(), level.String(), r)
+			}
+		}()
+		callback(event, level, response)
+	}
+	safeCallback()
 }
 
 // inspect records a query inspection and dispatches it to the inspector if enabled.

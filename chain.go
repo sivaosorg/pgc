@@ -191,20 +191,20 @@ func DefaultEventCallbackChain() func(event EventKey, level EventLevel, response
 	return func(event EventKey, level EventLevel, response wrapify.R) {
 		switch level {
 		case EventLevelDebug:
-			loggy.Debugf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
-				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+			loggy.Debugf("[pgc.event] event=%s | request_id=%s | status=%s | message=%s",
+				event, response.Meta().RequestID(), response.StatusText(), response.Message())
 		case EventLevelInfo:
-			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
-				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%s | message=%s",
+				event, response.Meta().RequestID(), response.StatusText(), response.Message())
 		case EventLevelWarn:
-			loggy.Warnf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
-				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+			loggy.Warnf("[pgc.event] event=%s | request_id=%s | status=%s | message=%s",
+				event, response.Meta().RequestID(), response.StatusText(), response.Message())
 		case EventLevelError:
-			loggy.Errorf("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
-				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+			loggy.Errorf("[pgc.event] event=%s | request_id=%s | status=%s | message=%s",
+				event, response.Meta().RequestID(), response.StatusText(), response.Message())
 		default:
-			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%d | message=%s",
-				event, response.Meta().RequestID(), response.StatusCode(), response.Message())
+			loggy.Infof("[pgc.event] event=%s | request_id=%s | status=%s | message=%s",
+				event, response.Meta().RequestID(), response.StatusText(), response.Message())
 		}
 	}
 }
