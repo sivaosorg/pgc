@@ -288,10 +288,7 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 		return
 	}
 
-	d.mu.RLock()
-	callback := d.on_event
-	d.mu.RUnlock()
-
+	callback := d.getEvent()
 	if callback == nil {
 		return
 	}
