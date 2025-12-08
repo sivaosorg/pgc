@@ -868,11 +868,12 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 		return stats, response.Reply()
 	}
 
-	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
-	return stats, wrapify.WrapOk(
+	response = wrapify.WrapOk(
 		fmt.Sprintf("Found %d table(s) containing all %d specified column(s)", len(stats), len(columns)),
 		stats,
 	).WithTotal(len(stats)).Reply()
+	d.dispatch_event(EventTableSearchByCols, EventLevelSuccess, response.Reply())
+	return stats, response
 }
 
 // TablesByAnyCols searches for tables that contain AT LEAST ONE of the specified columns.
