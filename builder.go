@@ -207,6 +207,13 @@ func (d *Datasource) IsInspectEnabled() bool {
 	return d.inspectEnabled
 }
 
+// IsEventEnabled returns whether event dispatching is enabled.
+func (d *Datasource) IsEventEnabled() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.eventEnabled
+}
+
 // LastInspect returns the most recent query inspection.
 // Returns nil if no queries have been inspected yet.
 func (d *Datasource) LastInspect() *QueryInspect {
@@ -447,6 +454,28 @@ func (d *Datasource) DisableInspect() *Datasource {
 	return d
 }
 
+// EnableEvent enables event dispatching.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) EnableEvent() *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.eventEnabled = true
+	return d
+}
+
+// DisableEvent disables event dispatching.
+//
+// Returns:
+//   - The Datasource instance for method chaining.
+func (d *Datasource) DisableEvent() *Datasource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.eventEnabled = false
+	return d
+}
+
 // OnReconnect sets the callback function that is invoked upon connection state changes (e.g., during keepalive events)
 // and returns the updated Datasource for method chaining.
 func (d *Datasource) OnReconnect(fnc func(response wrapify.R)) *Datasource {
@@ -474,10 +503,12 @@ func (d *Datasource) OnReconnectChain(fnc func(response wrapify.R, chain *Dataso
 // This function stores the provided notifier, which can be used to asynchronously notify
 // external components of changes in the connection's status, and returns the updated Datasource instance
 // to support method chaining.
+// When a callback is set, event dispatching is automatically enabled.
 func (d *Datasource) OnEvent(fnc func(event EventKey, level EventLevel, response wrapify.R)) *Datasource {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.on_event = fnc
+	d.eventEnabled = fnc != nil
 	return d
 }
 
