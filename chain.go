@@ -133,3 +133,114 @@ func DefaultInspectorChainWithThreshold(threshold time.Duration) func(ins QueryI
 		}
 	}
 }
+
+// DefaultInspectorCallbackVerbose returns a verbose query inspector callback that logs
+// comprehensive query execution details including raw query template, interpolated query,
+// argument count, and execution metadata. This is intended for development, debugging,
+// and detailed audit logging scenarios.
+//
+// Usage:
+//
+//	datasource.OnInspector(DefaultInspectorCallbackVerbose())
+//
+// Log Output Format:
+//
+//	[pgc.sql.inspector] func=<function_name> | duration=<execution_time> |
+//	executed_at=<timestamp> | arg_count=<N> | query_template=<raw_sql> | query_interpolated=<interpolated_sql>
+func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
+	return func(ins QueryInspect) {
+		loggy.Infof("[pgc.sql.inspector] func=%s | duration=%v | executed_at=%s | arg_count=%d | query_template=%s | query_interpolated=%s",
+			ins.FuncName(),
+			ins.Duration(),
+			ins.ExecutedAt().Format(defaultTimeFormat),
+			len(ins.Args()),
+			ins.Query(),
+			ins.Completed())
+	}
+}
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Event Chains
+//_______________________________________________________________________
+
+// DefaultEventCallback returns a pre-configured callback function for comprehensive
+// datasource event observability. This callback implements structured logging for
+// all significant datasource events including transactions, connection lifecycle,
+// table operations, function/procedure invocations, and query inspections.
+//
+// The callback correlates event keys with severity levels to emit appropriately
+// leveled log entries, enabling fine-grained filtering in log aggregation systems
+// and alerting pipelines.
+//
+// Usage:
+//
+//	datasource.OnEvent(DefaultEventCallback())
+//
+// Log Output Format:
+//
+//	[pgc.event] event=<event_key> | level=<severity> | request_id=<uuid> |
+//	status=<status_text> | msg=<message>
+//
+// Supported Event Categories:
+//   - Transaction events: begin, commit, rollback, savepoint
+//   - Connection events: open, close, retry, ping
+//   - Table events: listing, definition, keys/indexes, privileges
+//   - Function/Procedure events: listing, metadata, definition
+//   - Query events: inspection
+// func DefaultEventCallback() func(event EventKey, level EventLevel, response wrapify.R) {
+// 	return func(event EventKey, level EventLevel, response wrapify.R) {
+// 		msg := formatEventLog(event, level, response)
+// 		switch level {
+// 		case EventLevelError:
+// 			loggy.Errorf(msg)
+// 		case EventLevelWarn:
+// 			loggy.Warnf(msg)
+// 		case EventLevelDebug:
+// 			loggy.Debugf(msg)
+// 		case EventLevelSuccess:
+// 			loggy.Infof(msg)
+// 		default:
+// 			loggy.Infof(msg)
+// 		}
+// 	}
+// }
+
+// // TODO HERE: Enhance DefaultEventCallbackVerbose to include additional diagnostic fields
+// // formatEventLog formats a standard event log message with essential fields.
+// func formatEventLog(event EventKey, level EventLevel, response wrapify.R) string {
+// 	loggy.Infof("formatEventLog called: %v", response.Json())
+// 	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status=%s | msg=%s",
+// 		event.String(),
+// 		level.String(),
+// 		"response.Meta().RequestID()",
+// 		response.StatusText(),
+// 		response.Message())
+// }
+
+// // formatEventLogVerbose formats a verbose event log message with comprehensive details.
+// func formatEventLogVerbose(event EventKey, level EventLevel, response wrapify.R) string {
+// 	if response.IsError() && response.Cause() != nil {
+// 		return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status_code=%d | status=%s | error=%v | msg=%s | debug=%v",
+// 			event.String(),
+// 			level.String(),
+// 			response.Meta().RequestID(),
+// 			response.Reply().StatusCode(),
+// 			response.Reply().StatusText(),
+// 			response.Cause().Error(),
+// 			response.Message(),
+// 			response.Debugging())
+// 	}
+// 	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status_code=%d | status=%s | msg=%s | debug=%v",
+// 		event.String(),
+// 		level.String(),
+// 		response.Meta().RequestID(),
+// 		response.Reply().StatusCode(),
+// 		response.Reply().StatusText(),
+// 		response.Message(),
+// 		response.Debugging())
+// }
+
+// // sprintf is a helper function for formatted string creation.
+// func sprintf(format string, args ...any) string {
+// 	return fmt.Sprintf(format, args...)
+// }
