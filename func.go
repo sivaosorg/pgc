@@ -35,7 +35,7 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 	query := "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
 
 	// Start inspection
-	done := d.inspectQuery("Tables", query)
+	done := d.inspect("Tables", query)
 	err := d.Conn().Select(&tables, query)
 	// End inspection
 	done()
@@ -88,7 +88,7 @@ func (d *Datasource) Functions() (functions []string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspectQuery("Functions", query, d.conf.Database())
+	done := d.inspect("Functions", query, d.conf.Database())
 	err := d.Conn().Select(&functions, query, d.conf.Database())
 	// End inspection
 	done()
@@ -139,7 +139,7 @@ func (d *Datasource) Procedures() (procedures []string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspectQuery("Procedures", query, d.conf.Database())
+	done := d.inspect("Procedures", query, d.conf.Database())
 	err := d.Conn().Select(&procedures, query, d.conf.Database())
 	// End inspection
 	done()
@@ -214,7 +214,7 @@ func (d *Datasource) FuncSpec(function string) (fsm []FuncsSpec, response wrapif
 	`
 
 	// Start inspection
-	done := d.inspectQuery("FuncSpec", query, d.conf.Database(), function)
+	done := d.inspect("FuncSpec", query, d.conf.Database(), function)
 	err := d.Conn().Select(&fsm, query, d.conf.Database(), function)
 	// End inspection
 	done()
@@ -271,7 +271,7 @@ func (d *Datasource) FuncDef(function string) (def string, response wrapify.R) {
 	query := "SELECT pg_get_functiondef($1::regproc)"
 
 	// Start inspection
-	done := d.inspectQuery("FuncDef", query, function)
+	done := d.inspect("FuncDef", query, function)
 	err := d.Conn().QueryRow(query, function).Scan(&def)
 	// End inspection
 	done()
@@ -338,7 +338,7 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 	`
 
 	// Start inspection
-	done := d.inspectQuery("ProcDef", query, procedure)
+	done := d.inspect("ProcDef", query, procedure)
 	err := d.Conn().QueryRow(query, procedure).Scan(&def)
 	// End inspection
 	done()
@@ -410,7 +410,7 @@ func (d *Datasource) TableDef(table string) (ddl string, response wrapify.R) {
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TableDef", query, table)
+	done := d.inspect("TableDef", query, table)
 	err := d.Conn().QueryRow(query, table).Scan(&ddl)
 	// End inspection
 	done()
@@ -523,7 +523,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		GROUP BY c.relname;
 	`
 	// Start inspection
-	done := d.inspectQuery("TableDefPlus-ddl", ddlQuery, table)
+	done := d.inspect("TableDefPlus-ddl", ddlQuery, table)
 	err := d.Conn().QueryRow(ddlQuery, table).Scan(&tableDDL)
 	// End inspection
 	done()
@@ -561,7 +561,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 		) sub;
 	`
 	// Start inspection
-	done = d.inspectQuery("TableDefPlus-fk", fkQuery, table)
+	done = d.inspect("TableDefPlus-fk", fkQuery, table)
 	err = d.Conn().QueryRow(fkQuery, table).Scan(&fkDDL)
 	// End inspection
 	done()
@@ -582,7 +582,7 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	`
 
 	// Start inspection
-	done = d.inspectQuery("TableDefPlus-indexes", indexQuery, table)
+	done = d.inspect("TableDefPlus-indexes", indexQuery, table)
 	err = d.Conn().QueryRow(indexQuery, table).Scan(&indexes)
 	// End inspection
 	done()
@@ -662,7 +662,7 @@ func (d *Datasource) TableKeys(table string) (keys []TableKeysDef, response wrap
 		WHERE tablename = $1;
 	`
 	// Start inspection
-	done := d.inspectQuery("TableKeys", query, table)
+	done := d.inspect("TableKeys", query, table)
 	rows, err := d.Conn().Query(query, table)
 	// End inspection
 	done()
@@ -741,7 +741,7 @@ func (d *Datasource) ColsSpec(table string) (cols []ColsSpec, response wrapify.R
 	`
 
 	// Start inspection
-	done := d.inspectQuery("ColsSpec", query, table)
+	done := d.inspect("ColsSpec", query, table)
 	rows, err := d.Conn().Query(query, table)
 	// End inspection
 	done()
@@ -818,7 +818,7 @@ func (d *Datasource) TablesByCols(columns []string) (stats []TableColsSpec, resp
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablesByCols", query, pq.Array(columns), len(columns))
+	done := d.inspect("TablesByCols", query, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns), len(columns))
 	// End inspection
 	done()
@@ -912,7 +912,7 @@ func (d *Datasource) TablesByAnyCols(columns []string) (stats []TableColsSpec, r
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablesByColsIn", query, pq.Array(columns))
+	done := d.inspect("TablesByColsIn", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
 	// End inspection
 	done()
@@ -1002,7 +1002,7 @@ func (d *Datasource) TablesByColsIn(schema string, columns []string) (stats []Ta
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablesByColsIn", query, schema, pq.Array(columns), len(columns))
+	done := d.inspect("TablesByColsIn", query, schema, pq.Array(columns), len(columns))
 	rows, err := d.Conn().Query(query, schema, pq.Array(columns), len(columns))
 	// End inspection
 	done()
@@ -1095,7 +1095,7 @@ func (d *Datasource) TablesByColsPlus(columns []string) (stats []TableColsSpecMe
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablesByColsPlus", query, pq.Array(columns))
+	done := d.inspect("TablesByColsPlus", query, pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(columns))
 	// End inspection
 	done()
@@ -1235,7 +1235,7 @@ func (d *Datasource) TablePrivs(tables []string, privileges []string) (privs_spe
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablePrivs", query, pq.Array(tables), pq.Array(normalizedPrivileges))
+	done := d.inspect("TablePrivs", query, pq.Array(tables), pq.Array(normalizedPrivileges))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges))
 	// End inspection
 	done()
@@ -1370,7 +1370,7 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 	`
 
 	// Start inspection
-	done := d.inspectQuery("TablePrivsByUser", query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
+	done := d.inspect("TablePrivsByUser", query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(normalizedPrivileges), grantee)
 	// End inspection
 	done()
@@ -1495,7 +1495,7 @@ func (d *Datasource) ColsExists(tables []string, columns []string) (ces ColExist
 	`
 
 	// Start inspection
-	done := d.inspectQuery("ColsExists", query, pq.Array(tables), pq.Array(columns))
+	done := d.inspect("ColsExists", query, pq.Array(tables), pq.Array(columns))
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns))
 	// End inspection
 	done()
@@ -1615,7 +1615,7 @@ func (d *Datasource) ColsExistsIn(schema string, tables []string, columns []stri
 	`
 
 	// Start inspection
-	done := d.inspectQuery("ColsExistsIn", query, pq.Array(tables), pq.Array(columns), schema)
+	done := d.inspect("ColsExistsIn", query, pq.Array(tables), pq.Array(columns), schema)
 	rows, err := d.Conn().Query(query, pq.Array(tables), pq.Array(columns), schema)
 	// End inspection
 	done()

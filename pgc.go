@@ -305,7 +305,7 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 	safeCallback()
 }
 
-// inspect records a query inspection and dispatches it to the inspector if enabled.
+// dispatch_inspector records a query inspection and dispatches it to the inspector if enabled.
 // It also updates the lastInspect field with the latest inspection data.
 //
 // Parameters:
@@ -313,7 +313,7 @@ func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response w
 //   - query: The SQL query string.
 //   - args: The arguments passed to the query.
 //   - duration: The duration taken to execute the query.
-func (d *Datasource) inspect(funcName, query string, args []any, duration time.Duration) {
+func (d *Datasource) dispatch_inspector(funcName, query string, args []any, duration time.Duration) {
 	if !d.IsInspectEnabled() {
 		return
 	}
@@ -331,20 +331,20 @@ func (d *Datasource) inspect(funcName, query string, args []any, duration time.D
 	}
 }
 
-// inspectQuery is a helper method to inspect a query with timing.
+// inspect is a helper method to inspect a query with timing.
 // It returns a function that should be called after the query completes.
 //
 // Parameters:
 //   - funcName: The name of the function executing the query.
 //   - query: The SQL query string.
 //   - args: The arguments passed to the query.
-func (d *Datasource) inspectQuery(funcName, query string, args ...any) func() {
+func (d *Datasource) inspect(funcName, query string, args ...any) func() {
 	if !d.IsInspectEnabled() {
 		return func() {}
 	}
 
 	start := time.Now()
 	return func() {
-		d.inspect(funcName, query, args, time.Since(start))
+		d.dispatch_inspector(funcName, query, args, time.Since(start))
 	}
 }
