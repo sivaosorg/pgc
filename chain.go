@@ -1,6 +1,7 @@
 package pgc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sivaosorg/loggy"
@@ -187,35 +188,33 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 //   - Table events: listing, definition, keys/indexes, privileges
 //   - Function/Procedure events: listing, metadata, definition
 //   - Query events: inspection
-// func DefaultEventCallback() func(event EventKey, level EventLevel, response wrapify.R) {
-// 	return func(event EventKey, level EventLevel, response wrapify.R) {
-// 		msg := formatEventLog(event, level, response)
-// 		switch level {
-// 		case EventLevelError:
-// 			loggy.Errorf(msg)
-// 		case EventLevelWarn:
-// 			loggy.Warnf(msg)
-// 		case EventLevelDebug:
-// 			loggy.Debugf(msg)
-// 		case EventLevelSuccess:
-// 			loggy.Infof(msg)
-// 		default:
-// 			loggy.Infof(msg)
-// 		}
-// 	}
-// }
+func DefaultEventCallback() func(event EventKey, level EventLevel, response wrapify.R) {
+	return func(event EventKey, level EventLevel, response wrapify.R) {
+		msg := formatEventLog(event, level, response)
+		switch level {
+		case EventLevelError:
+			loggy.Errorf(msg)
+		case EventLevelWarn:
+			loggy.Warnf(msg)
+		case EventLevelDebug:
+			loggy.Debugf(msg)
+		case EventLevelSuccess:
+			loggy.Infof(msg)
+		default:
+			loggy.Infof(msg)
+		}
+	}
+}
 
-// // TODO HERE: Enhance DefaultEventCallbackVerbose to include additional diagnostic fields
 // // formatEventLog formats a standard event log message with essential fields.
-// func formatEventLog(event EventKey, level EventLevel, response wrapify.R) string {
-// 	loggy.Infof("formatEventLog called: %v", response.Json())
-// 	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status=%s | msg=%s",
-// 		event.String(),
-// 		level.String(),
-// 		"response.Meta().RequestID()",
-// 		response.StatusText(),
-// 		response.Message())
-// }
+func formatEventLog(event EventKey, level EventLevel, response wrapify.R) string {
+	return sprintf("[pgc.event] event=%s | level=%s | request_id=%s | status=%s | msg=%s",
+		event.String(),
+		level.String(),
+		response.Meta().RequestID(),
+		response.StatusText(),
+		response.Message())
+}
 
 // // formatEventLogVerbose formats a verbose event log message with comprehensive details.
 // func formatEventLogVerbose(event EventKey, level EventLevel, response wrapify.R) string {
@@ -241,6 +240,6 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 // }
 
 // // sprintf is a helper function for formatted string creation.
-// func sprintf(format string, args ...any) string {
-// 	return fmt.Sprintf(format, args...)
-// }
+func sprintf(format string, args ...any) string {
+	return fmt.Sprintf(format, args...)
+}

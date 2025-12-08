@@ -87,6 +87,7 @@ func NewClient(conf settings) *Datasource {
 	// Register default chain callbacks for connection lifecycle and query observability.
 	datasource.OnReconnectChain(DefaultReconnectChain())
 	datasource.OnInspector(DefaultInspectorChain())
+	datasource.OnEvent(DefaultEventCallback())
 
 	// If keepalive is enabled, initiate the background routine to monitor connection health.
 	if conf.keepalive {
