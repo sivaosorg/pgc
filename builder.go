@@ -236,6 +236,14 @@ func (d *Datasource) getInspector() QueryInspector {
 	return d.inspector
 }
 
+// getEvent returns the event callback function associated with the datasource.
+// If no event callback is set, it returns nil.
+func (d *Datasource) getEvent() func(event EventKey, level EventLevel, response wrapify.R) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.on_event
+}
+
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Setter Settings
 //_______________________________________________________________________

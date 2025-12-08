@@ -298,14 +298,13 @@ func (d *Datasource) dispatch_reconnect_chain(response wrapify.R, chain *Datasou
 // without blocking the calling goroutine, ensuring that notification handling is performed concurrently.
 func (d *Datasource) dispatch_event(event EventKey, level EventLevel, response wrapify.R) {
 	d.mu.RLock()
-	enabled := d.eventEnabled
 	callback := d.on_event
+	enabled := d.eventEnabled
 	d.mu.RUnlock()
 
-	if !enabled || callback == nil {
-		return
+	if enabled && callback != nil {
+		go callback(event, level, response)
 	}
-	go callback(event, level, response)
 }
 
 // inspect records a query inspection and dispatches it to the inspector if enabled.
