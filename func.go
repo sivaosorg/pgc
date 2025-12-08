@@ -354,8 +354,9 @@ func (d *Datasource) ProcDef(procedure string) (def string, response wrapify.R) 
 		return def, response.Reply()
 	}
 
+	response = wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
 	d.dispatch_event(EventProcedureDefinition, EventLevelSuccess, response.Reply())
-	return def, wrapify.WrapOk(fmt.Sprintf("Retrieved procedure '%s' metadata successfully", procedure), def).WithTotal(1).Reply()
+	return def, response
 }
 
 // TableDef generates the Data Definition Language (DDL) statement for creating the specified table
