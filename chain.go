@@ -208,3 +208,28 @@ func DefaultEventCallbackChain() func(event EventKey, level EventLevel, response
 		}
 	}
 }
+
+// EventCallbackChainBy returns an event callback that only logs events
+// matching the specified event keys. This is useful when you only want to monitor
+// specific types of events.
+//
+// Parameters:
+//   - events: A variadic list of EventKey values to filter.  Only matching events will be logged.
+//
+// Usage:
+//
+//	// Only log query inspection and transaction events
+//	datasource.OnEvent(EventCallbackChainBy(EventQueryInspect, EventTransactionBegin, EventTransactionCommit))
+func EventCallbackChainBy(events ...EventKey) func(event EventKey, level EventLevel, response wrapify.R) {
+	eventSet := make(map[EventKey]bool)
+	for _, e := range events {
+		eventSet[e] = true
+	}
+
+	return func(event EventKey, level EventLevel, response wrapify.R) {
+		if !eventSet[event] {
+			return
+		}
+		DefaultEventCallbackChain()(event, level, response)
+	}
+}
