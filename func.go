@@ -50,8 +50,9 @@ func (d *Datasource) Tables() (tables []string, response wrapify.R) {
 		d.dispatch_event(EventTableListing, EventLevelError, response.Reply())
 		return tables, response.Reply()
 	}
+	response = wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
 	d.dispatch_event(EventTableListing, EventLevelSuccess, response.Reply())
-	return tables, wrapify.WrapOk("Retrieved all tables successfully", tables).WithTotal(len(tables)).Reply()
+	return tables, response
 }
 
 // Functions retrieves the names of all stored functions from the "public" schema of the connected PostgreSQL database.
