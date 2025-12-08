@@ -163,7 +163,7 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 // Event Chains
 //_______________________________________________________________________
 
-// DefaultEventCallback returns a pre-configured callback function for comprehensive
+// DefaultEventCallbackChain returns a pre-configured callback function for comprehensive
 // datasource event observability. This callback implements structured logging for
 // all significant datasource events including transactions, connection lifecycle,
 // table operations, function/procedure invocations, and query inspections.
@@ -174,7 +174,7 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 //
 // Usage:
 //
-//	datasource.OnEvent(DefaultEventCallback())
+//	datasource.OnEvent(DefaultEventCallbackChain())
 //
 // Log Output Format:
 //
@@ -187,7 +187,7 @@ func DefaultInspectorCallbackVerbose() func(ins QueryInspect) {
 //   - Table events: listing, definition, keys/indexes, privileges
 //   - Function/Procedure events: listing, metadata, definition
 //   - Query events: inspection
-func DefaultEventCallback() func(event EventKey, level EventLevel, response wrapify.R) {
+func DefaultEventCallbackChain() func(event EventKey, level EventLevel, response wrapify.R) {
 	return func(event EventKey, level EventLevel, response wrapify.R) {
 		switch level {
 		case EventLevelDebug:
