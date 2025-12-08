@@ -1429,12 +1429,13 @@ func (d *Datasource) TablePrivsByUser(tables []string, privileges []string, gran
 	privs_spec.Stats.TotalWithPrivilege = len(privs_spec.Stats.TablesWithPrivileges)
 	privs_spec.Stats.TotalWithoutPrivilege = len(privs_spec.Stats.TablesWithoutPrivilege)
 
-	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
-	return privs_spec, wrapify.WrapOk(
+	response = wrapify.WrapOk(
 		fmt.Sprintf("Retrieved privileges for grantee '%s' on %d table(s): %d with privileges, %d without privileges",
 			grantee, len(tables), privs_spec.Stats.TotalWithPrivilege, privs_spec.Stats.TotalWithoutPrivilege),
 		privs_spec,
 	).WithTotal(len(privs_spec.Privileges)).Reply()
+	d.dispatch_event(EventTablePrivileges, EventLevelSuccess, response.Reply())
+	return privs_spec, response
 }
 
 // ColsExists checks the existence of specified columns across specified tables.
