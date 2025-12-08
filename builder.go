@@ -96,8 +96,8 @@ func (c *settings) PingInterval() time.Duration {
 	return c.pingInterval
 }
 
-// IsSsl returns true if the SSL mode is enabled (i.e., not "disable"), false otherwise.
-func (c *settings) IsSsl() bool {
+// IsSSLEnabled returns true if the SSL mode is enabled (i.e., not "disable"), false otherwise.
+func (c *settings) IsSSLEnabled() bool {
 	return !strings.EqualFold(c.sslmode, "disable")
 }
 
@@ -145,7 +145,7 @@ func (c *settings) String(safe bool) string {
 	if c.IsConnTimeout() {
 		builder.WriteString(fmt.Sprintf("connect_timeout=%d ", c.connTimeout))
 	}
-	if c.IsSsl() {
+	if c.IsSSLEnabled() {
 		if isNotEmpty(c.sslcert) {
 			builder.WriteString(fmt.Sprintf("sslcert=%s ", c.sslcert))
 		}
