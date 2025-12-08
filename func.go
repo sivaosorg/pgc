@@ -468,46 +468,49 @@ func (d *Datasource) TableDefPlus(table string) (ddl string, response wrapify.R)
 	// If a column is part of the primary key, " PRIMARY KEY" is appended.
 	var tableDDL string
 	ddlQuery := `
-		SELECT 'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
+		SELECT
+			'CREATE TABLE ' || quote_ident(c.relname) || E'\n(\n' ||
 			array_to_string(
 				array_agg(
-					'    ' || quote_ident(a.attname) || ' ' ||
+					' ' || quote_ident(a.attname) || ' ' ||
 					(
-						CASE 
+						CASE
 							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'integer' THEN 'INT4'
 							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'bigint' THEN 'INT8'
 							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'smallint' THEN 'INT16'
 							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'real' THEN 'FLOAT32'
 							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'double precision' THEN 'FLOAT64'
-							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) ILIKE 'character varying%' THEN 
-								'VARCHAR' || CASE 
-									WHEN a.atttypmod > 0 THEN '(' || (a.atttypmod - 4)::text || ')'
-									ELSE ''
-								END
+							WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) ILIKE 'character varying%' THEN
+								'VARCHAR' ||
+								CASE WHEN a.atttypmod > 0 THEN '(' || (a.atttypmod - 4)::text || ')'
+									ELSE '' END
 							ELSE UPPER(pg_catalog.format_type(a.atttypid, a.atttypmod))
 						END
-					) ||
-					CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END ||
-					COALESCE(
-						' DEFAULT ' || ad.adsrc ||
-						CASE WHEN ad.adsrc ILIKE 'nextval(%' THEN ' /* SEQUENCE */' ELSE '' END,
+					)
+					|| CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END
+					|| COALESCE(
+						' DEFAULT ' ||
+						pg_get_expr(ad.adbin, ad.adrelid) ||
+						CASE WHEN pg_get_expr(ad.adbin, ad.adrelid) ILIKE 'nextval(%' THEN ' /* SEQUENCE */' ELSE '' END,
 						''
-					) ||
-					CASE WHEN EXISTS (
-						SELECT 1 FROM pg_constraint con 
-						WHERE con.conrelid = c.oid 
-						  AND con.contype = 'p' 
-						  AND a.attnum = ANY(con.conkey)
+					)
+					|| CASE WHEN EXISTS (
+							SELECT 1 FROM pg_constraint con
+							WHERE con.conrelid = c.oid
+							AND con.contype = 'p'
+							AND a.attnum = ANY(con.conkey)
 					) THEN ' PRIMARY KEY' ELSE '' END
-				), E',\n'
-			) || E'\n);\n' AS ddl
+				),
+				E',\n'
+			)
+			|| E'\n);\n' AS ddl
 		FROM pg_class c
 		JOIN pg_namespace n ON n.oid = c.relnamespace
 		JOIN pg_attribute a ON a.attrelid = c.oid
 		LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
 		WHERE c.relname = $1
-			AND n.nspname = 'public'
-			AND a.attnum > 0
+		AND n.nspname = 'public'
+		AND a.attnum > 0
 		GROUP BY c.relname;
 	`
 	// Start inspection
